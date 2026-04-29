@@ -250,10 +250,36 @@ window.openEditModal = (id, text) => {
   toggleModal('editPostModal', true);
 }
 
+// 👏 축하 애니메이션 함수
+function showCelebration() {
+  const emojis = ['👏', '✨', '✍️', '💛', '🎉'];
+  for (let i = 0; i < 30; i++) {
+    const el = document.createElement('div');
+    el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    el.style.position = 'fixed'; el.style.left = '50%'; el.style.top = '50%';
+    el.style.fontSize = '24px'; el.style.zIndex = '9999'; el.style.pointerEvents = 'none';
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 100 + Math.random() * 150;
+    const x = Math.cos(angle) * dist;
+    const y = Math.sin(angle) * dist;
+    document.body.appendChild(el);
+    const anim = el.animate([
+      { transform: 'translate(-50%, -50%) scale(0)', opacity: 1 },
+      { transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(1.5)`, opacity: 0 }
+    ], { duration: 1200 + Math.random() * 500, easing: 'ease-out' });
+    anim.onfinish = () => el.remove();
+  }
+}
+
 window.submitPost = async () => {
   const t = document.getElementById('mainText').value.trim(); if(!t) return;
-  await addDoc(collection(db, "posts"), { uid: myId, text: t, isPrivate: document.getElementById('isPvt').checked, createdAt: serverTimestamp() });
-  document.getElementById('mainText').value = ""; localStorage.removeItem("essay_draft"); switchTab('feed');
+  try {
+    await addDoc(collection(db, "posts"), { uid: myId, text: t, isPrivate: document.getElementById('isPvt').checked, createdAt: serverTimestamp() });
+    showCelebration(); // 박수 애니메이션 실행
+    setTimeout(() => {
+      document.getElementById('mainText').value = ""; localStorage.removeItem("essay_draft"); switchTab('feed');
+    }, 1200);
+  } catch(e) { alert("제출에 실패했습니다."); }
 }
 
 window.deletePost = async (id) => { if(confirm("정말 삭제하시겠습니까?")) await deleteDoc(doc(db, "posts", id)); }
