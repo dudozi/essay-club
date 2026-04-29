@@ -7,10 +7,34 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#3D5A3E">
 <style>
-  body { margin: 0; background: #F7F5F0; font-family: -apple-system, sans-serif; color: #333; -webkit-tap-highlight-color: transparent; }
+  /* 기본 스타일 & 폰트 */
+  body { margin: 0; background: #F7F5F0; font-family: -apple-system, sans-serif; color: #333; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
   * { box-sizing: border-box; }
-  .app { max-width: 420px; margin: auto; background: #F7F5F0; min-height: 100vh; display: flex; flex-direction: column; }
+  .app { max-width: 420px; margin: auto; background: #F7F5F0; min-height: 100vh; display: flex; flex-direction: column; transition: 0.3s; }
   .hidden { display: none !important; }
+  
+  /* 다정한 입장 화면 디자인 */
+  #loginView { justify-content: center; padding: 40px; text-align: center; }
+  .welcome-msg { margin-bottom: 40px; animation: fadeIn 1s ease-out; }
+  .welcome-msg h2 { color: #3D5A3E; font-size: 28px; margin-bottom: 10px; cursor: default; }
+  .welcome-msg p { font-size: 15px; color: #777; line-height: 1.6; margin: 0; }
+  
+  .input-group { animation: slideUp 0.6s ease-out; }
+  input { width: 100%; padding: 18px; border: 1px solid #EAE8E3; border-radius: 12px; font-size: 16px; outline: none; background: white; transition: 0.2s; }
+  input:focus { border-color: #3D5A3E; box-shadow: 0 0 0 2px rgba(61,90,62,0.1); }
+  
+  .btn-next { width: 100%; background: #3D5A3E; color: white; border: none; padding: 18px; border-radius: 12px; font-size: 16px; font-weight: bold; margin-top: 15px; cursor: pointer; }
+  .btn-back { background: none; border: none; color: #999; margin-top: 20px; font-size: 14px; text-decoration: underline; cursor: pointer; }
+
+  /* 관리자 시크릿 통로 */
+  #adminEntrance { margin-top: 30px; opacity: 0; transition: 0.5s; }
+  #adminEntrance.visible { opacity: 1; }
+
+  /* 애니메이션 */
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* 헤더 & 메인 UI */
   .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 20px 10px; }
   .header-title h1 { margin: 0; font-size: 20px; color: #222; }
   .profile-circle { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #3D5A3E; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #3D5A3E; font-weight: bold; cursor: pointer; background: white; }
@@ -18,6 +42,8 @@
   .tab-btn { flex: 1; background: none; border: none; padding: 12px 0; font-size: 14px; color: #999; border-bottom: 2px solid transparent; outline: none; }
   .tab-btn.active { color: #3D5A3E; font-weight: bold; border-bottom: 2px solid #3D5A3E; }
   .content { padding: 20px; flex: 1; overflow-y: auto; }
+  
+  /* 카드 & 리스트 */
   .keyword-card { background: #E8F0E9; border: 1px solid #C5D8C6; border-radius: 12px; padding: 20px; margin-bottom: 24px; }
   .keyword-label { font-size: 11px; color: #555; font-weight: bold; margin-bottom: 8px; }
   .keyword-text { font-size: 22px; color: #222; font-weight: bold; margin: 0; }
@@ -25,45 +51,47 @@
   .item-profile { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; margin-right: 12px; color: white; background: #3D5A3E; }
   .badge { font-size: 11px; padding: 4px 8px; border-radius: 12px; border: 1px solid #CCC; color: #888; }
   .badge.done { border-color: #3D5A3E; color: #3D5A3E; background: #E8F0E9; }
-  .write-area { background: #FFF; border: 1px solid #EAE8E3; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-  textarea { width: 100%; min-height: 250px; border: none; outline: none; font-size: 15px; line-height: 1.6; resize: none; background: transparent; }
-  .btn-main { width: 100%; background: #3D5A3E; color: white; border: none; padding: 16px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
-  .feed-item { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #EAE8E3; position: relative; }
-  .feed-header { display: flex; align-items: center; margin-bottom: 12px; justify-content: space-between; }
-  .feed-name { font-weight: bold; margin: 0 8px; font-size: 14px; }
-  .feed-text { font-size: 15px; line-height: 1.6; color: #444; white-space: pre-wrap; margin-bottom: 16px; }
-  .btn-delete { background: #FFEDED; color: #FF4D4D; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+
+  /* 피드 & 삭제 버튼 */
+  .feed-item { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #EAE8E3; }
+  .feed-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .btn-delete { background: #FFEDED; color: #FF4D4D; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; }
+  
+  /* 팝업 모달 */
   .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-  .modal { background: white; padding: 24px; border-radius: 12px; width: 90%; max-width: 320px; }
-  .modal input { width: 100%; padding: 12px; border: 1px solid #DDD; border-radius: 8px; margin: 16px 0; font-size: 16px; }
+  .modal { background: white; padding: 24px; border-radius: 16px; width: 85%; max-width: 300px; }
 </style>
 </head>
 <body>
 
 <div class="app" id="loginView">
-  <div style="padding: 60px 20px; text-align: center;">
-    <h2 style="color:#3D5A3E">Essay Club</h2>
-    <input id="phoneInput" type="tel" placeholder="휴대폰 번호 (- 없이)" style="width:100%; padding:16px; border:1px solid #DDD; border-radius:8px; margin-top:30px; font-size:16px;">
-    <input id="nameInput" placeholder="닉네임" style="width:100%; padding:16px; border:1px solid #DDD; border-radius:8px; margin-top:10px; font-size:16px;">
-    <input id="codeInput" placeholder="관리자 코드 (해당 시만)" style="width:100%; padding:16px; border:1px solid #DDD; border-radius:8px; margin-top:10px; font-size:16px;">
-    <button onclick="login()" class="btn-main" style="margin-top:20px;">클럽 입장하기</button>
+  <div class="welcome-msg">
+    <h2 id="clubTitle" onclick="triggerAdmin()">Essay Club</h2>
+    <p id="loginGuide">반가워요!<br>당신의 문장이 시작되는 곳입니다.</p>
   </div>
-</div>
 
-<div id="profileModal" class="modal-overlay hidden">
-  <div class="modal">
-    <h3>닉네임 변경</h3>
-    <input id="editNameInput">
-    <div style="display:flex; gap:8px;">
-      <button onclick="updateNickname()" style="flex:1; padding:12px; background:#3D5A3E; color:white; border:none; border-radius:8px; font-weight:bold;">변경완료</button>
-      <button onclick="toggleModal('profileModal', false)" style="flex:1; padding:12px; background:#F0F0F0; color:#666; border:none; border-radius:8px;">닫기</button>
+  <div id="step1" class="input-group">
+    <p style="font-size: 14px; color: #3D5A3E; margin-bottom: 15px; font-weight: bold;">먼저, 본인 확인을 위해<br>휴대폰 번호를 알려주시겠어요?</p>
+    <input id="phoneInput" type="tel" placeholder="번호만 입력 (- 제외)">
+    <button onclick="goStep2()" class="btn-next">다음으로</button>
+  </div>
+
+  <div id="step2" class="input-group hidden">
+    <p style="font-size: 14px; color: #3D5A3E; margin-bottom: 15px; font-weight: bold;">클럽 멤버들에게<br>어떤 이름으로 불리고 싶으신가요?</p>
+    <input id="nameInput" placeholder="닉네임 입력">
+    
+    <div id="adminEntrance" class="hidden">
+      <input id="codeInput" placeholder="관리자 코드" style="margin-top: 10px; border-color: #C5D8C6; background: #F9FBFA;">
     </div>
+
+    <button onclick="finalLogin()" class="btn-next">클럽 입장하기</button>
+    <button onclick="goStep1()" class="btn-back">번호 다시 입력하기</button>
   </div>
 </div>
 
 <div class="app hidden" id="mainView">
   <div class="header">
-    <div class="header-title"><h1>글쓰기 클럽</h1><p id="adminStatus" style="font-size:11px; color:#3D5A3E; margin:0;"></p></div>
+    <div class="header-title"><h1>글쓰기 클럽</h1><p id="adminIndicator" style="font-size: 10px; color: #3D5A3E; margin: 0;"></p></div>
     <div class="profile-circle" id="myCircle" onclick="toggleModal('profileModal', true)">?</div>
   </div>
 
@@ -75,26 +103,43 @@
   </div>
 
   <div class="content" id="tab-today">
-    <div class="keyword-card"><div class="keyword-label">오늘의 글감</div><h2 class="keyword-text" id="dispKeyword">...</h2></div>
-    <div id="adminBox" class="hidden" style="background:#EAE8E3; padding:16px; border-radius:8px; margin-bottom:20px;">
-      <input id="keywordInput" placeholder="새 글감" style="width:100%; padding:10px; margin-bottom:10px;">
-      <button onclick="saveKeyword()" class="btn-main" style="padding:10px; margin:0;">글감 변경</button>
+    <div class="keyword-card">
+      <div class="keyword-label">오늘의 글감</div>
+      <h2 class="keyword-text" id="dispKeyword">로딩 중...</h2>
+    </div>
+    <div id="adminBox" class="hidden" style="background:#EAE8E3; padding:16px; border-radius:12px; margin-bottom:20px;">
+      <input id="keywordInput" placeholder="새로운 글감" style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px; border:1px solid #CCC;">
+      <button onclick="saveKeyword()" style="width:100%; padding:12px; background:#3D5A3E; color:white; border:none; border-radius:8px; font-weight:bold;">글감 변경하기</button>
     </div>
     <div class="list-header">제출 현황</div>
     <div id="statusList"></div>
   </div>
 
   <div class="content hidden" id="tab-write">
-    <div class="write-area"><textarea id="mainText" placeholder="여기에 당신의 마음을..."></textarea></div>
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+    <div style="background:white; border:1px solid #EAE8E3; border-radius:12px; padding:16px; margin-bottom:15px;">
+      <textarea id="mainText" style="width:100%; min-height:300px; border:none; outline:none; font-size:16px; line-height:1.7; resize:none;" placeholder="완벽하지 않아도 괜찮아요..."></textarea>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
       <span id="saveStatus" style="font-size:12px; color:#999;">임시저장 완료</span>
       <label style="font-size:13px;"><input type="checkbox" id="isPvt"> 나만 보기</label>
     </div>
-    <button onclick="submitPost()" class="btn-main">제출하기</button>
+    <button onclick="submitPost()" style="width:100%; background:#3D5A3E; color:white; border:none; padding:18px; border-radius:12px; font-size:16px; font-weight:bold; margin-top:20px;">에세이 제출하기</button>
   </div>
 
   <div class="content hidden" id="tab-feed"><div id="feedList"></div></div>
-  <div class="content hidden" id="tab-member"><div class="list-header">멤버</div><div id="memberList"></div></div>
+  <div class="content hidden" id="tab-member"><div class="list-header">참여 멤버</div><div id="memberList"></div></div>
+</div>
+
+<div id="profileModal" class="modal-overlay hidden">
+  <div class="modal">
+    <h3 style="margin:0 0 20px;">프로필 수정</h3>
+    <input id="editNameInput" style="margin-bottom:20px;">
+    <div style="display:flex; gap:10px;">
+      <button onclick="updateNickname()" style="flex:1; padding:12px; background:#3D5A3E; color:white; border:none; border-radius:8px; font-weight:bold;">변경</button>
+      <button onclick="logout()" style="flex:1; padding:12px; background:#F0F0F0; color:#666; border:none; border-radius:8px;">로그아웃</button>
+    </div>
+    <button onclick="toggleModal('profileModal', false)" style="width:100%; background:none; border:none; margin-top:15px; color:#999;">닫기</button>
+  </div>
 </div>
 
 <script type="module">
@@ -113,28 +158,52 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// 상태 관리
 let myId = localStorage.getItem("essay_uid");
 let isAdmin = localStorage.getItem("essay_role") === "admin";
 let userMap = {};
+let adminClickCount = 0;
 
-onSnapshot(collection(db, "profiles"), (snap) => {
-  snap.forEach(d => { userMap[d.id] = d.data().nickname; });
-  if(myId && userMap[myId]) {
-    document.getElementById('myCircle').textContent = userMap[myId][0];
-    document.getElementById('editNameInput').value = userMap[myId];
+// [입장 로직] 단계 전환
+window.goStep2 = () => {
+  const phone = document.getElementById('phoneInput').value.trim();
+  if(!phone) return alert("번호를 입력해 주세요.");
+  document.getElementById('step1').classList.add('hidden');
+  document.getElementById('step2').classList.remove('hidden');
+  document.getElementById('loginGuide').innerHTML = "거의 다 됐어요!<br>닉네임만 정하면 입장이 가능합니다.";
+}
+
+window.goStep1 = () => {
+  document.getElementById('step2').classList.add('hidden');
+  document.getElementById('step1').classList.remove('hidden');
+  document.getElementById('loginGuide').innerHTML = "반가워요!<br>당신의 문장이 시작되는 곳입니다.";
+}
+
+// [시크릿] 관리자 코드 열기
+window.triggerAdmin = () => {
+  adminClickCount++;
+  if(adminClickCount === 5) {
+    document.getElementById('adminEntrance').classList.remove('hidden');
+    document.getElementById('adminEntrance').classList.add('visible');
+    alert("관리자 비밀 통로가 활성화되었습니다.");
   }
-});
+}
 
-window.login = async function() {
+// [최종 입장]
+window.finalLogin = async function() {
   const phone = document.getElementById('phoneInput').value.trim();
   const name = document.getElementById('nameInput').value.trim();
   const code = document.getElementById('codeInput').value.trim();
-  if(!phone || !name) return alert("정보를 모두 입력해 주세요.");
+  
+  if(!name) return alert("닉네임을 입력해 주세요.");
+  
   await setDoc(doc(db, "profiles", phone), { nickname: name }, { merge: true });
   localStorage.setItem("essay_uid", phone);
   if(code === "MASTER7") localStorage.setItem("essay_role", "admin");
   location.reload();
 }
+
+window.logout = () => { if(confirm("로그아웃 하시겠습니까?")) { localStorage.clear(); location.reload(); } }
 
 window.updateNickname = async () => {
   const newName = document.getElementById('editNameInput').value.trim();
@@ -144,42 +213,54 @@ window.updateNickname = async () => {
 
 window.toggleModal = (id, show) => document.getElementById(id).classList.toggle('hidden', !show);
 
+// 닉네임 실시간 추적
+onSnapshot(collection(db, "profiles"), (snap) => {
+  snap.forEach(d => { userMap[d.id] = d.data().nickname; });
+  if(myId && userMap[myId]) {
+    document.getElementById('myCircle').textContent = userMap[myId][0];
+    document.getElementById('editNameInput').value = userMap[myId];
+  }
+});
+
 if(myId) {
   document.getElementById('loginView').classList.add('hidden');
   document.getElementById('mainView').classList.remove('hidden');
   if(isAdmin) {
     document.getElementById('adminBox').classList.remove('hidden');
-    document.getElementById('adminStatus').textContent = "● 관리자 모드";
+    document.getElementById('adminIndicator').textContent = "● 관리자 권한";
   }
 }
 
+// 임시저장
 const textEl = document.getElementById('mainText');
 textEl.value = localStorage.getItem("essay_draft") || "";
 textEl.addEventListener('input', () => localStorage.setItem("essay_draft", textEl.value));
 
-onSnapshot(collection(db, "posts"), (snap) => {
+// 데이터 동기화
+function loadAll() {
   const today = new Date().toLocaleDateString();
-  const all = new Set([myId]);
-  const done = new Set();
-  const counts = {};
-  snap.forEach(s => {
-    const d = s.data();
-    all.add(d.uid);
-    counts[d.uid] = (counts[d.uid] || 0) + 1;
-    if(new Date(d.createdAt?.toDate()).toLocaleDateString() === today) done.add(d.uid);
-  });
-
-  const render = (elId, isM) => {
-    const el = document.getElementById(elId);
-    if(!el) return;
-    el.innerHTML = "";
-    Array.from(all).forEach(id => {
-      const n = userMap[id] || "멤버";
-      el.innerHTML += `<div class="list-item"><div class="item-profile">${n[0]}</div><div class="item-info"><b>${n}</b>${isM?`<div style='font-size:11px;color:#999;'>${counts[id]||0}편</div>`:''}</div>${!isM?`<div class="badge ${done.has(id)?'done':''}">${done.has(id)?'제출':'미제출'}</div>`:''}</div>`;
+  onSnapshot(collection(db, "posts"), (snap) => {
+    const all = new Set([myId]);
+    const done = new Set();
+    const counts = {};
+    snap.forEach(s => {
+      const d = s.data();
+      all.add(d.uid);
+      counts[d.uid] = (counts[d.uid] || 0) + 1;
+      if(new Date(d.createdAt?.toDate()).toLocaleDateString() === today) done.add(d.uid);
     });
-  }
-  render('statusList', false); render('memberList', true);
-});
+
+    const render = (elId, isM) => {
+      const el = document.getElementById(elId);
+      if(!el) return; el.innerHTML = "";
+      Array.from(all).forEach(id => {
+        const n = userMap[id] || "멤버";
+        el.innerHTML += `<div class="list-item"><div class="item-profile">${n[0]}</div><div class="item-info"><b>${n}</b>${isM?`<div style='font-size:11px;color:#999;'>에세이 ${counts[id]||0}편</div>`:''}</div>${!isM?`<div class="badge ${done.has(id)?'done':''}">${done.has(id)?'제출':'미제출'}</div>`:''}</div>`;
+      });
+    }
+    render('statusList', false); render('memberList', true);
+  });
+}
 
 onSnapshot(query(collection(db, "posts"), orderBy("createdAt", "desc")), (snap) => {
   const feed = document.getElementById('feedList');
@@ -187,10 +268,10 @@ onSnapshot(query(collection(db, "posts"), orderBy("createdAt", "desc")), (snap) 
   snap.forEach(s => {
     const d = s.data();
     if(d.isPrivate && d.uid !== myId && !isAdmin) return;
-    const name = userMap[d.uid] || "멤버";
+    const n = userMap[d.uid] || "멤버";
     const div = document.createElement('div');
     div.className = "feed-item";
-    div.innerHTML = `<div class="feed-header"><div class="feed-user-info"><div class="item-profile" style="width:24px;height:24px;font-size:10px;">${name[0]}</div><div class="feed-name">${name} ${d.isPrivate?'🔒':''}</div></div>${isAdmin?`<button class="btn-delete" onclick="deletePost('${s.id}')">삭제</button>`:''}</div><div class="feed-text">${d.text}</div>`;
+    div.innerHTML = `<div class="feed-header"><div style="display:flex;align-items:center;"><div class="item-profile" style="width:24px;height:24px;font-size:10px;">${n[0]}</div><span style="font-weight:bold;margin:0 8px;font-size:14px;">${n} ${d.isPrivate?'🔒':''}</span></div>${isAdmin?`<button class="btn-delete" onclick="deletePost('${s.id}')">삭제</button>`:''}</div><div class="feed-text">${d.text}</div>`;
     feed.appendChild(div);
   });
 });
@@ -202,7 +283,7 @@ window.submitPost = async () => {
   textEl.value = ""; localStorage.removeItem("essay_draft"); switchTab('feed');
 }
 
-window.deletePost = async (id) => { if(confirm("삭제?")) await deleteDoc(doc(db, "posts", id)); }
+window.deletePost = async (id) => { if(confirm("삭제할까요?")) await deleteDoc(doc(db, "posts", id)); }
 window.switchTab = (id) => {
   ['today', 'write', 'feed', 'member'].forEach(v => { document.getElementById('tab-'+v).classList.add('hidden'); document.getElementById('btn-'+v).classList.remove('active'); });
   document.getElementById('tab-'+id).classList.remove('hidden'); document.getElementById('btn-'+id).classList.add('active');
@@ -215,6 +296,8 @@ window.saveKeyword = async () => {
 onSnapshot(query(collection(db, "keywords"), orderBy("date", "desc"), limit(1)), (snap) => {
   snap.forEach(d => document.getElementById('dispKeyword').textContent = d.data().text);
 });
+
+if(myId) loadAll();
 </script>
 </body>
 </html>
