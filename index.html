@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>글쓰기 클럽</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3D5A3E">
+
+<style>
+body {margin:0;background:#F7F5F0;font-family:sans-serif;}
+.app {max-width:420px;margin:auto;background:white;min-height:100vh;padding:16px;}
+input,button,textarea {width:100%;padding:12px;margin-top:10px;}
+button {background:#3D5A3E;color:white;border:none;border-radius:8px;}
+.hidden {display:none;}
+.feed-item {border-bottom:1px solid #eee;padding:10px 0;}
+.small {font-size:12px;color:#999;}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<!-- 로그인 -->
+<div id="login">
+  <h3>같이 쓰는 공간이에요</h3>
+  <input id="codeInput" placeholder="초대코드를 입력해 주세요">
+  <button onclick="login()">들어가기</button>
+  <div id="error" style="color:red;font-size:12px;"></div>
+</div>
+
+<!-- 메인 -->
+<div id="main" class="hidden">
+
+  <h2>글쓰기 클럽</h2>
+
+  <!-- 오늘 글감 -->
+  <h3 id="keywordText">불러오는 중...</h3>
+
+  <!-- 관리자 영역 -->
+  <div id="adminBox" style="display:none;">
+    <input id="keywordInput" placeholder="새 글감 입력">
+    <button onclick="saveKeyword()">글감 변경</button>
+  </div>
+
+  <button onclick="show('write')">글 쓰기</button>
+  <button onclick="show('feed')">피드</button>
+
+  <!-- 글쓰기 -->
+  <div id="write" style="display:none">
+    <textarea id="text" placeholder="완벽하지 않아도 괜찮아요."></textarea>
+    <label><input type="checkbox" id="private"> 나만 보기</label>
+    <button onclick="submit()">글 남기기</button>
+  </div>
+
+  <!-- 피드 -->
+  <div id="feed"></div>
+
+  <!-- 히스토리 -->
+  <h4 style="margin-top:20px;">지난 글감</h4>
+  <div id="historyList"></div>
+
+</div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, onSnapshot,
+  query, orderBy, updateDoc, doc, limit
+} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+
+// Firebase 설정
+const firebaseConfig = {
+  apiKey: "AIzaSyBNtJ_BkroRRyq2d2dFLDb4gjumzRX85mk",
+  authDomain: "essay-club.firebaseapp.com",
+  projectId: "essay-club",
+  storageBucket: "essay-club.firebasestorage.app",
+  messagingSenderId: "282430977646",
+  appId: "1:282430977646:web:8a1139948bb7f1b286587f"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// 로그인
+const INVITE_CODE = "ESSAY7";
+const ADMIN_CODE = "MASTER7";
+const LOGIN_KEY = "essay_login";
+
+let isAdmin = false;
+
+// 자동 로그인
+const role = localStorage.getItem(LOGIN_KEY);
+if(role){
+  if(role === "admin") isAdmin = true;
+  enterApp();
+}
+
+window.login = function(){
+  const code = document.getElementById('codeInput').value.trim();
+
+  if(code === INVITE_CODE){
+    localStorage.setItem(LOGIN_KEY, "user");
+    enterApp();
+  }
+  else if(code === ADMIN_CODE){
+    localStorage.setItem(LOGIN_KEY, "admin");
+    isAdmin = true;
+    enterApp();
+  }
+  else {
+    document.getElementById('error').textContent = "코드를 다시 확인해 주세요";
+  }
+};
+
+function enterApp(){
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('main').classList.remove('hidden');
+
+  if(isAdmin){
+    document.getElementById('adminBox').style.display = 'block';
+  }
+}
+
+// 화면 전환
+window.show = function(id){
+  document.getElementById('write').style.display = id==='write'?'block':'none';
+};
+
+// 글 작성
+window.submit = async function(){
+  const text = document.getElementById('text').value.trim();
+  const isPrivate = document.getElementById('private').checked;
+
+  if(!text) return;
+
+  await addDoc(collection(db,"posts"),{
+    text,
+    isPrivate,
+    likes:0,
+    createdAt: Date.now()
+  });
+
+  document.getElementById('text').value='';
+};
+
+// 피드
+const postQuery = query(collection(db,"posts"), orderBy("createdAt","desc"));
+
+onSnapshot(postQuery,(snapshot)=>{
+  const feed = document.getElementById('feed');
+  feed.innerHTML = "";
+
+  snapshot.forEach(docSnap=>{
+    const d = docSnap.data();
+
+    const div = document.createElement('div');
+    div.className="feed-item";
+
+    div.innerHTML = `
+      <div>${d.isPrivate ? '나만 보기' : d.text}</div>
+      ${!d.isPrivate ? `<button onclick="like('${docSnap.id}',${d.likes})">공감 ${d.likes}</button>`:''}
+    `;
+
+    feed.appendChild(div);
+  });
+});
+
+// 공감
+window.like = async function(id,likes){
+  await updateDoc(doc(db,"posts",id),{
+    likes:likes+1
+  });
+};
+
+// 글감 저장 (관리자)
+window.saveKeyword = async function(){
+  const text = document.getElementById('keywordInput').value.trim();
+  if(!text) return;
+
+  await addDoc(collection(db,"keywords"),{
+    text,
+    date: Date.now()
+  });
+
+  document.getElementById('keywordInput').value='';
+};
+
+// 오늘 글감
+const keywordQuery = query(collection(db,"keywords"), orderBy("date","desc"), limit(1));
+
+onSnapshot(keywordQuery,(snapshot)=>{
+  snapshot.forEach(doc=>{
+    document.getElementById('keywordText').textContent = doc.data().text;
+  });
+});
+
+// 히스토리
+const historyQuery = query(collection(db,"keywords"), orderBy("date","desc"));
+
+onSnapshot(historyQuery,(snapshot)=>{
+  const list = document.getElementById('historyList');
+  list.innerHTML = "";
+
+  snapshot.forEach(doc=>{
+    const d = doc.data();
+    const date = new Date(d.date);
+    const str = `${date.getMonth()+1}/${date.getDate()}`;
+
+    const div = document.createElement('div');
+    div.innerHTML = `
+      <div class="small">${str}</div>
+      <div>${d.text}</div>
+    `;
+    list.appendChild(div);
+  });
+});
+
+// PWA
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js");
+}
+
+</script>
+
+</body>
+</html>
