@@ -4,120 +4,82 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>글쓰기 클럽</title>
-
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#3D5A3E">
-
 <style>
-  /* 기본 설정 */
-  body { margin: 0; background: #F7F5F0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: #333; }
+  body { margin: 0; background: #F7F5F0; font-family: -apple-system, sans-serif; color: #333; -webkit-tap-highlight-color: transparent; }
   * { box-sizing: border-box; }
   .app { max-width: 420px; margin: auto; background: #F7F5F0; min-height: 100vh; display: flex; flex-direction: column; }
-  button { cursor: pointer; font-family: inherit; }
   .hidden { display: none !important; }
-
-  /* 헤더 영역 */
+  
+  /* 헤더 & 프로필 */
   .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 20px 10px; }
   .header-title h1 { margin: 0; font-size: 20px; color: #222; }
   .header-title p { margin: 4px 0 0; font-size: 12px; color: #888; }
-  .profile-circle { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #3D5A3E; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #3D5A3E; background: transparent; }
+  .profile-circle { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #3D5A3E; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #3D5A3E; font-weight: bold; }
   
-  /* 탭 메뉴 */
+  /* 탭 네비게이션 */
   .tab-nav { display: flex; border-bottom: 1px solid #E5E5E5; padding: 0 10px; }
-  .tab-btn { flex: 1; background: none; border: none; padding: 12px 0; font-size: 14px; color: #999; border-bottom: 2px solid transparent; transition: 0.2s; }
+  .tab-btn { flex: 1; background: none; border: none; padding: 12px 0; font-size: 14px; color: #999; border-bottom: 2px solid transparent; outline: none; }
   .tab-btn.active { color: #3D5A3E; font-weight: bold; border-bottom: 2px solid #3D5A3E; }
-
-  /* 콘텐츠 영역 */
-  .content { padding: 20px; flex: 1; overflow-y: auto; }
-
-  /* 글감 카드 */
-  .keyword-card { background: #E8F0E9; border: 1px solid #C5D8C6; border-radius: 12px; padding: 20px; margin-bottom: 24px; position: relative; overflow: hidden; }
-  .keyword-card::after { content: ''; position: absolute; right: -20px; top: -20px; width: 80px; height: 80px; background: rgba(255,255,255,0.4); border-radius: 50%; }
-  .keyword-label { font-size: 12px; color: #555; font-weight: bold; margin-bottom: 8px; }
-  .keyword-text { font-size: 24px; color: #222; font-weight: bold; margin: 0 0 8px; }
-  .keyword-sub { font-size: 12px; color: #888; margin: 0; }
-
-  /* 리스트 (제출 현황 / 멤버) */
-  .list-header { font-size: 12px; color: #888; margin-bottom: 12px; }
-  .list-item { display: flex; align-items: center; padding: 16px 0; border-bottom: 1px solid #EAE8E3; }
-  .list-item:last-child { border-bottom: none; }
-  .item-profile { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; margin-right: 12px; }
-  .item-profile.p1 { background: #EAE6FE; color: #6C5CE7; }
-  .item-profile.p2 { background: #E3F2E9; color: #27AE60; }
-  .item-profile.p3 { background: #FCE8ED; color: #E84393; }
-  .item-profile.p4 { background: #FFF0D4; color: #D35400; }
-  .item-profile.p5 { background: #E8F0E9; color: #3D5A3E; }
-  .item-info { flex: 1; }
-  .item-name { font-size: 15px; color: #222; font-weight: 500; }
-  .item-sub { font-size: 12px; color: #888; margin-top: 4px; }
   
-  /* 배지 & 버튼 */
-  .badge { font-size: 12px; padding: 6px 10px; border-radius: 16px; border: 1px solid #CCC; color: #888; background: transparent; }
-  .badge.done { border-color: #3D5A3E; color: #3D5A3E; }
-  .btn-text { font-size: 13px; color: #666; text-decoration: none; background: none; border: none; }
-  .btn-main { display: block; width: 100%; background: #3D5A3E; color: white; border: none; padding: 16px; border-radius: 8px; font-size: 16px; font-weight: bold; margin-top: 20px; text-align: center; }
+  /* 메인 컨텐츠 */
+  .content { padding: 20px; flex: 1; overflow-y: auto; }
+  .keyword-card { background: #E8F0E9; border: 1px solid #C5D8C6; border-radius: 12px; padding: 20px; margin-bottom: 24px; }
+  .keyword-label { font-size: 11px; color: #555; font-weight: bold; margin-bottom: 8px; }
+  .keyword-text { font-size: 22px; color: #222; font-weight: bold; margin: 0; }
+  
+  /* 리스트 공통 */
+  .list-header { font-size: 12px; color: #888; margin-bottom: 12px; }
+  .list-item { display: flex; align-items: center; padding: 14px 0; border-bottom: 1px solid #EAE8E3; }
+  .item-profile { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; margin-right: 12px; background: #E8F0E9; color: #3D5A3E; }
+  .item-info { flex: 1; }
+  .item-name { font-size: 15px; font-weight: 500; }
+  .item-sub { font-size: 12px; color: #888; margin-top: 2px; }
+  .badge { font-size: 11px; padding: 4px 8px; border-radius: 12px; border: 1px solid #CCC; color: #888; }
+  .badge.done { border-color: #3D5A3E; color: #3D5A3E; background: #E8F0E9; }
 
   /* 쓰기 화면 */
-  .write-area { background: #F0EEE7; border: 1px solid #EAE8E3; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-  .write-area label { display: block; font-size: 12px; color: #888; margin-bottom: 8px; }
-  .write-area textarea { width: 100%; min-height: 200px; background: transparent; border: none; font-size: 15px; color: #333; resize: none; outline: none; line-height: 1.6; }
-  .write-area textarea::placeholder { color: #AAA; }
-  .action-box { display: flex; align-items: center; justify-content: space-between; background: #EAE8E3; padding: 16px; border-radius: 8px; margin-bottom: 16px; }
-  .action-text { font-size: 13px; color: #666; }
-  .btn-sub { background: none; border: none; color: #333; font-size: 14px; font-weight: bold; }
+  .write-area { background: #FFF; border: 1px solid #EAE8E3; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+  textarea { width: 100%; min-height: 250px; border: none; outline: none; font-size: 15px; line-height: 1.6; resize: none; background: transparent; }
+  .btn-main { width: 100%; background: #3D5A3E; color: white; border: none; padding: 16px; border-radius: 8px; font-size: 16px; font-weight: bold; }
   
-  /* 토글 스위치 */
-  .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
-  .toggle-switch input { opacity: 0; width: 0; height: 0; }
-  .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #CCC; border-radius: 24px; transition: .3s; }
-  .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .3s; }
-  input:checked + .slider { background: #C5D8C6; }
-  input:checked + .slider:before { transform: translateX(20px); background: #3D5A3E; }
-  
-  .btn-group { display: flex; gap: 10px; }
-  .btn-group button { flex: 1; padding: 16px; border-radius: 8px; font-size: 16px; font-weight: bold; border: none; }
-  .btn-draft { background: #EAE8E3; color: #666; }
-
   /* 피드 화면 */
-  .feed-item { border-bottom: 1px solid #EAE8E3; padding: 24px 0; }
-  .feed-header { display: flex; align-items: center; margin-bottom: 12px; }
-  .feed-name { font-weight: bold; font-size: 15px; margin: 0 8px; }
-  .feed-time { font-size: 12px; color: #999; }
-  .feed-title { font-size: 18px; font-weight: bold; margin: 0 0 12px; color: #222; }
-  .feed-text { font-size: 15px; line-height: 1.6; color: #444; margin-bottom: 16px; white-space: pre-wrap; }
-  .feed-actions { display: flex; gap: 8px; }
-  .action-chip { border: 1px solid #DDD; background: white; border-radius: 16px; padding: 6px 12px; font-size: 12px; color: #666; }
-  .private-post { color: #999; font-style: italic; }
-
-  /* 멤버 탭 (초대 카드) */
-  .invite-card { background: #EBE8F5; border: 1px solid #D5CFF0; border-radius: 12px; padding: 30px 20px; text-align: center; margin-bottom: 30px; }
-  .invite-label { font-size: 12px; color: #666; }
-  .invite-code { font-size: 32px; font-weight: bold; color: #3A3163; margin: 10px 0; letter-spacing: 2px; }
-  .btn-copy { background: transparent; border: 1px solid #3A3163; color: #3A3163; padding: 8px 24px; border-radius: 20px; font-size: 13px; margin-top: 10px; }
-
-  /* 빈 화면 안내문 */
-  .empty-state { text-align: center; padding: 60px 20px; color: #999; font-size: 14px; line-height: 1.6; }
+  .feed-item { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #EAE8E3; position: relative; }
+  .feed-header { display: flex; align-items: center; margin-bottom: 12px; justify-content: space-between; }
+  .feed-user-info { display: flex; align-items: center; }
+  .feed-name { font-weight: bold; margin: 0 8px; font-size: 14px; }
+  .feed-text { font-size: 15px; line-height: 1.6; color: #444; white-space: pre-wrap; margin-bottom: 16px; }
+  .comment-box { border-top: 1px solid #F0F0F0; padding-top: 12px; margin-top: 12px; font-size: 13px; }
+  .comment-item { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+  .comment-input-wrap { display: flex; gap: 8px; margin-top: 10px; }
+  .comment-input { flex: 1; padding: 8px; border: 1px solid #DDD; border-radius: 4px; font-size: 12px; }
+  .btn-send { background: #3D5A3E; color: white; border: none; border-radius: 4px; padding: 0 10px; font-size: 12px; }
+  
+  /* 삭제 버튼 스타일 */
+  .btn-delete { background: #FFEDED; color: #FF4D4D; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
 </style>
 </head>
 <body>
 
 <div class="app" id="loginView">
-  <div style="padding: 40px 20px; text-align: center;">
-    <h2>글쓰기 클럽</h2>
-    <p style="color:#666; font-size:14px;">같이 쓰는 공간이에요</p>
-    <input id="codeInput" placeholder="초대코드 (ESSAY7)" style="width:100%; padding:16px; border:1px solid #DDD; border-radius:8px; margin-top:20px; font-size:16px; box-sizing:border-box;">
-    <button onclick="login()" class="btn-main">들어가기</button>
-    <div id="error" style="color:red; font-size:12px; margin-top:10px;"></div>
+  <div style="padding: 60px 20px; text-align: center;">
+    <h2 style="color:#3D5A3E; margin-bottom: 10px;">Essay Club</h2>
+    <p style="font-size: 13px; color: #666;">테스트가 끝나면 관리자가 정리할 수 있어요</p>
+    <input id="nameInput" placeholder="닉네임을 입력해 주세요" style="width:100%; padding:16px; border:1px solid #DDD; border-radius:8px; margin-top:30px; font-size:16px;">
+    <input id="codeInput" placeholder="초대코드 (테스트 종료 시 관리자 코드로 입장)" style="width:100%; padding:16px; border:1px solid #DDD; border-radius:8px; margin-top:10px; font-size:16px;">
+    <button onclick="login()" class="btn-main" style="margin-top:20px;">들어가기</button>
+    <p id="error" style="color:red; font-size:12px; margin-top:10px;"></p>
   </div>
 </div>
 
 <div class="app hidden" id="mainView">
   <div class="header">
     <div class="header-title">
-      <h1>글쓰기 클럽</h1>
-      <p>멤버들이 참여 중</p>
+      <h1 id="adminTag">글쓰기 클럽</h1>
+      <p id="statusMsg">오늘도 다정하게 써보아요</p>
     </div>
-    <div class="profile-circle">나</div>
+    <div class="profile-circle" id="myCircle" onclick="if(confirm('로그아웃 하시겠습니까?')){localStorage.clear();location.reload();}">나</div>
   </div>
 
   <div class="tab-nav">
@@ -130,61 +92,28 @@
   <div class="content" id="tab-today">
     <div class="keyword-card">
       <div class="keyword-label">오늘의 글감</div>
-      <h2 class="keyword-text" id="todayKeyword1">불러오는 중...</h2>
-      <p class="keyword-sub">오늘 자정까지 제출</p>
+      <h2 class="keyword-text" id="dispKeyword">글감을 불러오고 있어요...</h2>
     </div>
 
-    <div id="adminBox" style="display:none; background:#EAE8E3; padding:16px; border-radius:8px; margin-bottom:24px;">
+    <div id="adminBox" class="hidden" style="background:#EAE8E3; padding:16px; border-radius:8px; margin-bottom:24px;">
       <input id="keywordInput" placeholder="새 글감 입력" style="width:100%; padding:12px; border:1px solid #CCC; border-radius:4px; margin-bottom:10px;">
-      <button onclick="saveKeyword()" class="btn-main" style="margin-top:0; padding:12px;">글감 변경하기</button>
+      <button onclick="saveKeyword()" class="btn-main" style="padding:12px; margin:0;">글감 변경하기</button>
     </div>
 
-    <div class="list-header">제출 현황</div>
-    <div class="list-item">
-      <div class="item-profile p1">지</div>
-      <div class="item-info"><div class="item-name">지현</div></div>
-      <div class="badge done">제출 완료</div>
-    </div>
-    <div class="list-item">
-      <div class="item-profile p5">나</div>
-      <div class="item-info"><div class="item-name">나</div></div>
-      <div class="badge">미제출</div>
-    </div>
-    
-    <button class="btn-main" onclick="switchTab('write')">오늘 에세이 쓰러 가기</button>
+    <div class="list-header">오늘의 제출 현황</div>
+    <div id="statusList"></div>
+    <button class="btn-main" style="margin-top:24px;" onclick="switchTab('write')">오늘 에세이 쓰러 가기</button>
   </div>
 
   <div class="content hidden" id="tab-write">
-    <div class="keyword-card">
-      <div class="keyword-label">오늘의 글감</div>
-      <h2 class="keyword-text" id="todayKeyword2">불러오는 중...</h2>
-    </div>
-
     <div class="write-area">
-      <label>자유롭게 써보세요</label>
-      <textarea id="text" placeholder="여기에 에세이를 입력하세요..."></textarea>
+      <textarea id="mainText" placeholder="완벽하지 않아도 괜찮아요. 여기에 에세이를 입력하세요..."></textarea>
     </div>
-
-    <div class="action-box">
-      <div class="action-text">● 임시저장 없음</div>
-      <button class="btn-sub">저장</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+      <span id="saveStatus" style="font-size:12px; color:#999;">임시저장 완료</span>
+      <label style="font-size:13px; color:#666;"><input type="checkbox" id="isPvt"> 나만 보기</label>
     </div>
-
-    <div class="action-box">
-      <div>
-        <div style="font-weight:bold; font-size:14px; margin-bottom:4px;">공개</div>
-        <div style="font-size:12px; color:#888;">멤버 모두가 피드에서 볼 수 있어요</div>
-      </div>
-      <label class="toggle-switch">
-        <input type="checkbox" id="privateToggle">
-        <span class="slider"></span>
-      </label>
-    </div>
-
-    <div class="btn-group">
-      <button class="btn-draft">임시저장</button>
-      <button class="btn-main" style="margin-top:0;" onclick="submitPost()">제출하기</button>
-    </div>
+    <button onclick="submitPost()" class="btn-main">제출하기</button>
   </div>
 
   <div class="content hidden" id="tab-feed">
@@ -192,39 +121,15 @@
   </div>
 
   <div class="content hidden" id="tab-member">
-    <div class="invite-card">
-      <div class="invite-label">초대 코드</div>
-      <div class="invite-code" id="inviteCodeText">ESSAY7</div>
-      <div class="invite-label">이 코드를 공유해 멤버를 초대하세요</div>
-      <button class="btn-copy" onclick="copyCode()">코드 복사</button>
-    </div>
-
-    <div class="list-header">멤버 목록</div>
-    <div class="list-item">
-      <div class="item-profile p1">지</div>
-      <div class="item-info">
-        <div class="item-name">지현</div>
-        <div class="item-sub">에세이 0편</div>
-      </div>
-      <button class="btn-text">보기 →</button>
-    </div>
-    <div class="list-item">
-      <div class="item-profile p5">나</div>
-      <div class="item-info">
-        <div class="item-name">나</div>
-        <div class="item-sub">에세이 0편</div>
-      </div>
-      <button class="btn-text">보기 →</button>
-    </div>
+    <div class="list-header">함께 쓰는 멤버들</div>
+    <div id="memberList"></div>
   </div>
-
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, updateDoc, doc, limit } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, where, limit, serverTimestamp, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
-// Firebase 설정
 const firebaseConfig = {
   apiKey: "AIzaSyBNtJ_BkroRRyq2d2dFLDb4gjumzRX85mk",
   authDomain: "essay-club.firebaseapp.com",
@@ -237,141 +142,172 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// 로그인 로직
-const INVITE_CODE = "ESSAY7";
-const ADMIN_CODE = "MASTER7";
-let isAdmin = false;
+let currentUser = localStorage.getItem("essay_nickname") || "";
+let isAdmin = localStorage.getItem("essay_role") === "admin";
 
-if(localStorage.getItem("essay_login")){
-  if(localStorage.getItem("essay_login") === "admin") isAdmin = true;
-  enterApp();
+window.login = function() {
+  const name = document.getElementById('nameInput').value.trim();
+  const code = document.getElementById('codeInput').value.trim();
+  if(!name) return alert("닉네임을 입력해 주세요.");
+  if(code !== "ESSAY7" && code !== "MASTER7") return alert("초대코드가 틀렸습니다.");
+
+  localStorage.setItem("essay_nickname", name);
+  if(code === "MASTER7") localStorage.setItem("essay_role", "admin");
+  location.reload();
 }
 
-window.login = function(){
-  const code = document.getElementById('codeInput').value.trim();
-  if(code === INVITE_CODE){ localStorage.setItem("essay_login", "user"); enterApp(); }
-  else if(code === ADMIN_CODE){ localStorage.setItem("essay_login", "admin"); isAdmin = true; enterApp(); }
-  else { document.getElementById('error').textContent = "코드를 다시 확인해 주세요"; }
-};
-
-function enterApp(){
+if(currentUser) {
   document.getElementById('loginView').classList.add('hidden');
   document.getElementById('mainView').classList.remove('hidden');
-  if(isAdmin) document.getElementById('adminBox').style.display = 'block';
+  document.getElementById('myCircle').textContent = currentUser[0];
+  if(isAdmin) {
+    document.getElementById('adminBox').classList.remove('hidden');
+    document.getElementById('adminTag').textContent = "글쓰기 클럽 (관리자)";
+  }
 }
 
-// 탭 전환 로직
-window.switchTab = function(tabId){
-  ['today', 'write', 'feed', 'member'].forEach(id => {
-    document.getElementById('tab-' + id).classList.add('hidden');
-    document.getElementById('btn-' + id).classList.remove('active');
-  });
-  document.getElementById('tab-' + tabId).classList.remove('hidden');
-  document.getElementById('btn-' + tabId).classList.add('active');
-};
-
-// 글감 불러오기
-const keywordQuery = query(collection(db,"keywords"), orderBy("date","desc"), limit(1));
-onSnapshot(keywordQuery, (snapshot) => {
-  const text1 = document.getElementById('todayKeyword1');
-  const text2 = document.getElementById('todayKeyword2');
-  
-  if(snapshot.empty){
-    text1.textContent = text2.textContent = "첫 번째 글감이 곧 도착해요 ✍️";
-  } else {
-    snapshot.forEach(doc => {
-      text1.textContent = text2.textContent = doc.data().text;
-    });
-  }
+// 4단계: 임시저장
+const textEl = document.getElementById('mainText');
+const statusEl = document.getElementById('saveStatus');
+textEl.value = localStorage.getItem("essay_draft") || "";
+textEl.addEventListener('input', () => {
+  localStorage.setItem("essay_draft", textEl.value);
+  statusEl.textContent = "저장 중...";
+  setTimeout(() => statusEl.textContent = "임시저장 완료", 500);
 });
 
-// 관리자 글감 저장
-window.saveKeyword = async function(){
-  const text = document.getElementById('keywordInput').value.trim();
-  if(!text) return;
-  await addDoc(collection(db,"keywords"),{ text, date: Date.now() });
-  document.getElementById('keywordInput').value='';
-};
-
-// 글 제출하기
-window.submitPost = async function(){
-  const text = document.getElementById('text').value.trim();
-  const isPrivate = document.getElementById('privateToggle').checked; // 체크되면 비공개 처리
-
-  if(!text) return;
-  await addDoc(collection(db,"posts"),{
-    text, isPrivate, likes:0, createdAt: Date.now()
+// 실시간 멤버 리스트 업데이트
+function loadRealtimeData() {
+  const todayStr = new Date().toLocaleDateString();
+  onSnapshot(collection(db, "posts"), (snap) => {
+    const allMembers = new Set([currentUser]);
+    const submittedToday = new Set();
+    const postCounts = {};
+    snap.forEach(docSnap => {
+      const d = docSnap.data();
+      if(d.author) {
+        allMembers.add(d.author);
+        postCounts[d.author] = (postCounts[d.author] || 0) + 1;
+        if(d.createdAt?.toDate().toLocaleDateString() === todayStr) submittedToday.add(d.author);
+      }
+    });
+    const memberArr = Array.from(allMembers);
+    const statusList = document.getElementById('statusList');
+    statusList.innerHTML = "";
+    memberArr.forEach(m => {
+      const isDone = submittedToday.has(m);
+      statusList.innerHTML += `<div class="list-item"><div class="item-profile">${m[0]}</div><div class="item-info"><b>${m}</b></div><div class="badge ${isDone ? 'done' : ''}">${isDone ? '제출 완료' : '미제출'}</div></div>`;
+    });
+    const memberList = document.getElementById('memberList');
+    if(memberList) {
+      memberList.innerHTML = "";
+      memberArr.forEach(m => {
+        memberList.innerHTML += `<div class="list-item"><div class="item-profile">${m[0]}</div><div class="item-info"><div class="item-name">${m}</div><div class="item-sub">에세이 ${postCounts[m] || 0}편</div></div></div>`;
+      });
+    }
   });
+}
 
-  document.getElementById('text').value='';
-  document.getElementById('privateToggle').checked = false;
+// 에세이 제출
+window.submitPost = async function() {
+  const text = textEl.value.trim();
+  if(!text) return;
+  await addDoc(collection(db, "posts"), { author: currentUser, text, isPrivate: document.getElementById('isPvt').checked, likes: 0, createdAt: serverTimestamp() });
+  textEl.value = "";
+  localStorage.removeItem("essay_draft");
   switchTab('feed');
-};
+}
+
+// 관리자용 삭제 기능
+window.deletePost = async function(id) {
+  if(confirm("이 에세이를 영구 삭제하시겠습니까? 관련 댓글은 남을 수 있습니다.")) {
+    await deleteDoc(doc(db, "posts", id));
+  }
+}
+
+window.deleteComment = async function(id) {
+  if(confirm("이 댓글을 삭제하시겠습니까?")) {
+    await deleteDoc(doc(db, "comments", id));
+  }
+}
 
 // 피드 불러오기
-const postQuery = query(collection(db,"posts"), orderBy("createdAt","desc"));
-onSnapshot(postQuery, (snapshot) => {
-  const feedList = document.getElementById('feedList');
-  feedList.innerHTML = "";
-
-  if(snapshot.empty){
-    feedList.innerHTML = "<div class='empty-state'>아직 올라온 에세이가 없어요.<br>첫 번째 에세이의 주인공이 되어주세요!</div>";
-  } else {
-    snapshot.forEach(docSnap => {
-      const d = docSnap.data();
-      const div = document.createElement('div');
-      div.className = "feed-item";
-
-      // 제목(첫 줄)과 본문 분리
-      const lines = d.text.split('\n');
-      const title = lines[0];
-      const content = lines.slice(1).join('\n');
-
-      if(d.isPrivate){
-        div.innerHTML = `
-          <div class="feed-header">
-            <div class="item-profile p5">익명</div>
-            <span class="feed-name">익명</span> <span class="feed-time">오늘</span>
-          </div>
-          <div class="feed-title private-post">(비공개 에세이)</div>
-          <div class="feed-text private-post">이 글은 비공개로 작성되었습니다.</div>
-        `;
-      } else {
-        div.innerHTML = `
-          <div class="feed-header">
-            <div class="item-profile p5">글</div>
-            <span class="feed-name">글쓴이</span> <span class="feed-time">오늘</span>
-          </div>
-          <div class="feed-title">${title}</div>
-          <div class="feed-text">${content}</div>
-          <div class="feed-actions">
-            <button class="action-chip" onclick="like('${docSnap.id}',${d.likes})">♡ ${d.likes}</button>
-            <button class="action-chip">댓글 쓰기</button>
-          </div>
-        `;
-      }
-      feedList.appendChild(div);
-    });
-  }
+onSnapshot(query(collection(db, "posts"), orderBy("createdAt", "desc")), (snap) => {
+  const feedEl = document.getElementById('feedList');
+  feedEl.innerHTML = snap.empty ? "<div style='text-align:center; padding:40px; color:#999;'>첫 에세이를 기다리고 있어요.</div>" : "";
+  snap.forEach(docSnap => {
+    const d = docSnap.data();
+    if(d.isPrivate && d.author !== currentUser && !isAdmin) return;
+    const div = document.createElement('div');
+    div.className = "feed-item";
+    div.innerHTML = `
+      <div class="feed-header">
+        <div class="feed-user-info">
+          <div class="item-profile" style="width:24px; height:24px; font-size:10px;">${d.author[0]}</div>
+          <div class="feed-name">${d.author} ${d.isPrivate ? '🔒' : ''}</div>
+        </div>
+        ${isAdmin ? `<button class="btn-delete" onclick="deletePost('${docSnap.id}')">에세이 삭제</button>` : ''}
+      </div>
+      <div class="feed-text">${d.text}</div>
+      <div class="comment-box">
+        <div id="cmts-${docSnap.id}"></div>
+        <div class="comment-input-wrap">
+          <input id="in-${docSnap.id}" class="comment-input" placeholder="다정한 댓글 남기기">
+          <button class="btn-send" onclick="addComment('${docSnap.id}')">전송</button>
+        </div>
+      </div>
+    `;
+    feedEl.appendChild(div);
+    loadComments(docSnap.id);
+  });
 });
 
-// 공감 버튼
-window.like = async function(id, likes){
-  await updateDoc(doc(db,"posts",id),{ likes: likes+1 });
-};
-
-// 초대코드 복사 기능
-window.copyCode = function(){
-  const text = document.getElementById('inviteCodeText').innerText;
-  navigator.clipboard.writeText(text).then(() => {
-    alert("초대 코드가 복사되었습니다!");
-  });
-};
-
-// PWA
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("service-worker.js");
+window.addComment = async function(id) {
+  const input = document.getElementById('in-'+id);
+  if(!input.value.trim()) return;
+  await addDoc(collection(db, "comments"), { postId: id, author: currentUser, text: input.value, createdAt: serverTimestamp() });
+  input.value = "";
 }
+
+function loadComments(id) {
+  onSnapshot(query(collection(db, "comments"), where("postId", "==", id), orderBy("createdAt", "asc")), (snap) => {
+    const cBox = document.getElementById('cmts-'+id);
+    cBox.innerHTML = "";
+    snap.forEach(c => {
+      const cd = c.data();
+      const cDiv = document.createElement('div');
+      cDiv.className = "comment-item";
+      cDiv.innerHTML = `
+        <span><b>${cd.author}</b> ${cd.text}</span>
+        ${isAdmin ? `<button style="background:none; border:none; color:#FF4D4D; font-size:10px;" onclick="deleteComment('${c.id}')">삭제</button>` : ''}
+      `;
+      cBox.appendChild(cDiv);
+    });
+  });
+}
+
+// 공통 로직
+window.switchTab = function(id) {
+  ['today', 'write', 'feed', 'member'].forEach(v => {
+    document.getElementById('tab-'+v).classList.add('hidden');
+    document.getElementById('btn-'+v).classList.remove('active');
+  });
+  document.getElementById('tab-'+id).classList.remove('hidden');
+  document.getElementById('btn-'+id).classList.add('active');
+}
+
+window.saveKeyword = async function() {
+  const t = document.getElementById('keywordInput').value.trim();
+  if(!t) return;
+  await addDoc(collection(db, "keywords"), { text: t, date: Date.now() });
+  document.getElementById('keywordInput').value = "";
+}
+
+onSnapshot(query(collection(db, "keywords"), orderBy("date", "desc"), limit(1)), (snap) => {
+  snap.forEach(d => document.getElementById('dispKeyword').textContent = d.data().text);
+});
+
+if(currentUser) loadRealtimeData();
 </script>
 </body>
 </html>
