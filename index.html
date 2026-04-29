@@ -24,14 +24,13 @@
 
   /* 메인 UI */
   .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 20px 10px; }
-  .header-title h1 { margin: 0; font-size: 20px; color: #222; }
+  .header-title h1 { margin: 0; font-size: 20px; color: #222; cursor: pointer; user-select: none; }
   .profile-circle { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #3D5A3E; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #3D5A3E; font-weight: bold; cursor: pointer; background: white; }
   .tab-nav { display: flex; border-bottom: 1px solid #E5E5E5; padding: 0; margin: 0 10px; }
   .tab-btn { flex: 1; background: none; border: none; padding: 12px 0; font-size: 14px; color: #999; border-bottom: 2px solid transparent; outline: none; }
   .tab-btn.active { color: #3D5A3E; font-weight: bold; border-bottom: 2px solid #3D5A3E; }
   .content { padding: 20px; flex: 1; overflow-y: auto; }
 
-  /* 카드 & 리스트 */
   .keyword-card { background: #E8F0E9; border: 1px solid #C5D8C6; border-radius: 12px; padding: 20px; margin-bottom: 24px; }
   .keyword-label { font-size: 12px; color: #3D5A3E; font-weight: bold; margin-bottom: 4px; }
   .keyword-text { font-size: 22px; color: #222; font-weight: bold; margin: 0; }
@@ -40,7 +39,6 @@
   .badge { font-size: 11px; padding: 4px 8px; border-radius: 12px; border: 1px solid #CCC; color: #888; }
   .badge.done { border-color: #3D5A3E; color: #3D5A3E; background: #E8F0E9; }
 
-  /* 피드 & 수정/삭제 버튼 */
   .feed-item { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #EAE8E3; }
   .feed-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
   .feed-text { font-size: 16px; line-height: 1.7; white-space: pre-wrap; }
@@ -49,7 +47,6 @@
   .btn-edit { background: #E8F0E9; color: #3D5A3E; }
   .btn-del { background: #FFEDED; color: #FF4D4D; }
   
-  /* 모달 */
   .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
   .modal { background: white; padding: 24px; border-radius: 16px; width: 85%; max-width: 320px; }
 
@@ -106,7 +103,7 @@
 
 <div class="app hidden" id="mainView">
   <div class="header">
-    <div class="header-title"><h1>글쓰기 클럽</h1><p id="adminIndicator" style="font-size: 10px; color: #D35400; margin: 0;"></p></div>
+    <div class="header-title"><h1 onclick="triggerQuickSwitch()">글쓰기 클럽</h1><p id="adminIndicator" style="font-size: 10px; color: #D35400; margin: 0;"></p></div>
     <div class="profile-circle" id="myCircle" onclick="toggleModal('profileModal', true)">?</div>
   </div>
   <div class="tab-nav">
@@ -124,7 +121,7 @@
     <div id="statusList"></div>
   </div>
   <div class="content hidden" id="tab-write">
-    <textarea id="mainText" style="min-height:350px;" placeholder="오늘의 글감에 대한 생각을 적어보세요..."></textarea>
+    <textarea id="mainText" style="min-height:350px;" placeholder="글감에 대한 생각을 적어보세요..."></textarea>
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <span id="saveStatus" style="font-size:12px; color:#999;">자동 임시저장 중</span>
       <label style="font-size:13px;"><input type="checkbox" id="isPvt"> 나만 보기</label>
@@ -155,13 +152,43 @@ let myId = localStorage.getItem("essay_uid");
 let isAdmin = localStorage.getItem("essay_role") === "admin";
 let userMap = {};
 let adminClickCount = 0;
+let switchCount = 0;
+
+window.triggerQuickSwitch = () => {
+  if(++switchCount >= 5) {
+    if(isAdmin) {
+      const prevId = localStorage.getItem("prev_user_uid");
+      if(prevId && confirm("규원님 계정으로 다시 전환할까요?")) {
+        localStorage.setItem("essay_uid", prevId);
+        localStorage.removeItem("essay_role");
+        location.reload();
+      } else if(!prevId && confirm("관리자 로그를 종료하고 입장 화면으로 갈까요?")) {
+        localStorage.clear(); location.reload();
+      }
+    } else {
+      if(confirm("관리자 로그인을 위해 마스터 코드를 입력하시겠습니까?")) {
+        localStorage.setItem("prev_user_uid", myId);
+        document.getElementById('mainView').classList.add('hidden');
+        document.getElementById('loginView').classList.remove('hidden');
+        document.getElementById('step1').classList.add('hidden');
+        document.getElementById('step2').classList.add('hidden');
+        document.getElementById('masterStep').classList.remove('hidden');
+      }
+    }
+    switchCount = 0;
+  }
+}
 
 window.triggerAdmin = () => { if(++adminClickCount >= 5) { document.getElementById('step1').classList.add('hidden'); document.getElementById('step2').classList.add('hidden'); document.getElementById('masterStep').classList.remove('hidden'); } }
+
 window.masterLogin = async () => {
   if(document.getElementById('masterCodeInput').value !== "0519") return alert("코드가 틀렸습니다.");
   await setDoc(doc(db, "profiles", "master_admin"), { nickname: "Master" }, { merge: true });
-  localStorage.setItem("essay_uid", "master_admin"); localStorage.setItem("essay_role", "admin"); location.reload();
+  localStorage.setItem("essay_uid", "master_admin"); 
+  localStorage.setItem("essay_role", "admin"); 
+  location.reload();
 }
+
 window.goStep1 = () => { document.getElementById('masterStep').classList.add('hidden'); document.getElementById('step2').classList.add('hidden'); document.getElementById('step1').classList.remove('hidden'); }
 window.goStep2 = () => { if(document.getElementById('phoneInput').value.trim()) { document.getElementById('step1').classList.add('hidden'); document.getElementById('step2').classList.remove('hidden'); } }
 window.finalLogin = async () => {
@@ -207,24 +234,9 @@ onSnapshot(query(collection(db, "posts"), orderBy("createdAt", "desc")), (snap) 
   const feed = document.getElementById('feedList'); feed.innerHTML = "";
   snap.forEach(s => {
     const d = s.data(); if(d.isPrivate && d.uid !== myId && !isAdmin) return;
-    const n = userMap[d.uid] || "멤버"; 
-    const isMyPost = d.uid === myId; // 본인 글인지 확인
+    const n = userMap[d.uid] || "멤버"; const isMyPost = d.uid === myId;
     const div = document.createElement('div'); div.className = "feed-item";
-    
-    // 본인 글이거나 마스터일 경우에만 수정/삭제 버튼 노출
-    div.innerHTML = `
-      <div class="feed-header">
-        <div style="display:flex;align-items:center;">
-          <div class="item-profile" style="width:24px;height:24px;font-size:10px;">${n[0]}</div>
-          <span style="font-weight:bold;margin:0 8px;font-size:14px;">${n} ${d.isPrivate?'🔒':''}</span>
-        </div>
-        <div class="action-btns">
-          ${isMyPost ? `<button class="btn-sm btn-edit" onclick="openEditModal('${s.id}', \`${d.text.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)">수정</button>` : ''}
-          ${isMyPost || isAdmin ? `<button class="btn-sm btn-del" onclick="deletePost('${s.id}')">삭제</button>` : ''}
-        </div>
-      </div>
-      <div class="feed-text">${d.text}</div>
-    `;
+    div.innerHTML = `<div class="feed-header"><div style="display:flex;align-items:center;"><div class="item-profile" style="width:24px;height:24px;font-size:10px;">${n[0]}</div><span style="font-weight:bold;margin:0 8px;font-size:14px;">${n} ${d.isPrivate?'🔒':''}</span></div><div class="action-btns">${isMyPost ? `<button class="btn-sm btn-edit" onclick="openEditModal('${s.id}', \`${d.text.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)">수정</button>` : ''}${isMyPost || isAdmin ? `<button class="btn-sm btn-del" onclick="deletePost('${s.id}')">삭제</button>` : ''}</div></div><div class="feed-text">${d.text}</div>`;
     feed.appendChild(div);
   });
 });
@@ -233,10 +245,7 @@ window.openEditModal = (id, text) => {
   document.getElementById('editPostText').value = text;
   document.getElementById('saveEditBtn').onclick = async () => {
     const newText = document.getElementById('editPostText').value.trim();
-    if(newText) { 
-      await updateDoc(doc(db, "posts", id), { text: newText }); 
-      toggleModal('editPostModal', false); 
-    }
+    if(newText) { await updateDoc(doc(db, "posts", id), { text: newText }); toggleModal('editPostModal', false); }
   };
   toggleModal('editPostModal', true);
 }
@@ -247,7 +256,7 @@ window.submitPost = async () => {
   document.getElementById('mainText').value = ""; localStorage.removeItem("essay_draft"); switchTab('feed');
 }
 
-window.deletePost = async (id) => { if(confirm("이 에세이를 정말 삭제하시겠습니까?")) await deleteDoc(doc(db, "posts", id)); }
+window.deletePost = async (id) => { if(confirm("정말 삭제하시겠습니까?")) await deleteDoc(doc(db, "posts", id)); }
 window.switchTab = (id) => { ['today', 'write', 'feed', 'member'].forEach(v => { document.getElementById('tab-'+v).classList.add('hidden'); document.getElementById('btn-'+v).classList.remove('active'); }); document.getElementById('tab-'+id).classList.remove('hidden'); document.getElementById('btn-'+id).classList.add('active'); }
 window.saveKeyword = async () => {
   const t = document.getElementById('keywordInput').value.trim();
