@@ -11,17 +11,17 @@
   * { box-sizing: border-box; }
   .app { max-width: 420px; margin: auto; background: #F7F5F0; min-height: 100vh; display: flex; flex-direction: column; transition: 0.3s; }
   .hidden { display: none !important; }
-  #loginView { justify-content: center; padding: 40px; text-align: center; }
+  
+  /* 입장 화면 */
+  #loginView { justify-content: center; padding: 40px; text-align: center; min-height: 100vh; display: flex; flex-direction: column; }
   .welcome-msg { margin-bottom: 40px; }
-  .welcome-msg h2 { color: #3D5A3E; font-size: 28px; margin-bottom: 10px; cursor: default; }
+  .welcome-msg h2 { color: #3D5A3E; font-size: 28px; margin-bottom: 10px; cursor: pointer; user-select: none; }
   .welcome-msg p { font-size: 15px; color: #777; line-height: 1.6; margin: 0; }
   .input-group { animation: slideUp 0.5s ease-out; }
-  input { width: 100%; padding: 18px; border: 1px solid #EAE8E3; border-radius: 12px; font-size: 16px; outline: none; background: white; margin-bottom: 10px; }
+  input { width: 100%; padding: 18px; border: 1px solid #EAE8E3; border-radius: 12px; font-size: 16px; outline: none; background: white; margin-bottom: 12px; }
   input:focus { border-color: #3D5A3E; }
   .btn-next { width: 100%; background: #3D5A3E; color: white; border: none; padding: 18px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; }
-  .btn-next:disabled { background: #CCC; cursor: not-allowed; }
   .btn-back { background: none; border: none; color: #999; margin-top: 20px; font-size: 14px; text-decoration: underline; cursor: pointer; }
-  @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
   /* 메인 UI */
   .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 20px 10px; }
@@ -31,22 +31,25 @@
   .tab-btn { flex: 1; background: none; border: none; padding: 12px 0; font-size: 14px; color: #999; border-bottom: 2px solid transparent; outline: none; }
   .tab-btn.active { color: #3D5A3E; font-weight: bold; border-bottom: 2px solid #3D5A3E; }
   .content { padding: 20px; flex: 1; overflow-y: auto; }
+
+  /* 카드 & 리스트 */
   .keyword-card { background: #E8F0E9; border: 1px solid #C5D8C6; border-radius: 12px; padding: 20px; margin-bottom: 24px; }
-  .keyword-text { font-size: 22px; color: #222; font-weight: bold; margin: 0; }
   .list-item { display: flex; align-items: center; padding: 14px 0; border-bottom: 1px solid #EAE8E3; }
   .item-profile { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; margin-right: 12px; color: white; background: #3D5A3E; }
   .badge { font-size: 11px; padding: 4px 8px; border-radius: 12px; border: 1px solid #CCC; color: #888; }
   .badge.done { border-color: #3D5A3E; color: #3D5A3E; background: #E8F0E9; }
+
+  /* 피드 & 삭제 */
   .feed-item { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #EAE8E3; }
   .feed-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
   .btn-delete { background: #FFEDED; color: #FF4D4D; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }
-  .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-  .modal { background: white; padding: 24px; border-radius: 16px; width: 85%; max-width: 300px; }
+  
+  @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 </head>
 <body>
 
-<div class="app" id="loginView">
+<div id="loginView">
   <div class="welcome-msg">
     <h2 id="clubTitle" onclick="triggerAdmin()">Essay Club</h2>
     <p id="loginGuide">반가워요!<br>당신의 문장이 시작되는 곳입니다.</p>
@@ -61,34 +64,41 @@
   <div id="step2" class="input-group hidden">
     <p style="font-size: 14px; color: #3D5A3E; margin-bottom: 15px; font-weight: bold;">클럽 멤버들에게<br>어떤 이름으로 불리고 싶으신가요?</p>
     <input id="nameInput" placeholder="닉네임 입력">
-    <div id="adminEntrance" class="hidden">
-      <input id="codeInput" placeholder="관리자 코드" style="border-color: #C5D8C6; background: #F9FBFA;">
-    </div>
     <button id="finalBtn" onclick="finalLogin()" class="btn-next">클럽 입장하기</button>
     <button onclick="goStep1()" class="btn-back">번호 다시 입력하기</button>
+  </div>
+
+  <div id="masterStep" class="input-group hidden">
+    <p style="font-size: 14px; color: #D35400; margin-bottom: 15px; font-weight: bold;">관리자 전용 입구입니다.<br>마스터 코드를 입력해 주세요.</p>
+    <input id="masterCodeInput" type="password" placeholder="Master Code">
+    <button onclick="masterLogin()" class="btn-next" style="background:#D35400;">마스터 입장</button>
+    <button onclick="goStep1()" class="btn-back">일반 입장으로 돌아가기</button>
   </div>
 </div>
 
 <div class="app hidden" id="mainView">
   <div class="header">
-    <div class="header-title"><h1>글쓰기 클럽</h1><p id="adminIndicator" style="font-size: 10px; color: #3D5A3E; margin: 0;"></p></div>
-    <div class="profile-circle" id="myCircle" onclick="toggleModal('profileModal', true)">?</div>
+    <div class="header-title"><h1>글쓰기 클럽</h1><p id="adminIndicator" style="font-size: 10px; color: #D35400; margin: 0;"></p></div>
+    <div class="profile-circle" id="myCircle" onclick="if(confirm('로그아웃 하시겠습니까?')){localStorage.clear();location.reload();}">?</div>
   </div>
+
   <div class="tab-nav">
     <button class="tab-btn active" id="btn-today" onclick="switchTab('today')">오늘</button>
     <button class="tab-btn" id="btn-write" onclick="switchTab('write')">쓰기</button>
     <button class="tab-btn" id="btn-feed" onclick="switchTab('feed')">피드</button>
     <button class="tab-btn" id="btn-member" onclick="switchTab('member')">멤버</button>
   </div>
+
   <div class="content" id="tab-today">
     <div class="keyword-card"><div class="keyword-label">오늘의 글감</div><h2 class="keyword-text" id="dispKeyword">로딩 중...</h2></div>
-    <div id="adminBox" class="hidden" style="background:#EAE8E3; padding:16px; border-radius:12px; margin-bottom:20px;">
-      <input id="keywordInput" placeholder="새로운 글감" style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px; border:1px solid #CCC;">
-      <button onclick="saveKeyword()" style="width:100%; padding:12px; background:#3D5A3E; color:white; border:none; border-radius:8px; font-weight:bold;">글감 변경하기</button>
+    <div id="adminBox" class="hidden" style="background:#FDEBD0; padding:16px; border-radius:12px; margin-bottom:20px; border: 1px solid #F5CBA7;">
+      <input id="keywordInput" placeholder="새로운 글감 입력" style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px; border:1px solid #CCC;">
+      <button onclick="saveKeyword()" style="width:100%; padding:12px; background:#D35400; color:white; border:none; border-radius:8px; font-weight:bold;">글감 확정 및 배달</button>
     </div>
-    <div class="list-header">제출 현황</div>
+    <div class="list-header">오늘의 제출 현황</div>
     <div id="statusList"></div>
   </div>
+
   <div class="content hidden" id="tab-write">
     <div style="background:white; border:1px solid #EAE8E3; border-radius:12px; padding:16px; margin-bottom:15px;">
       <textarea id="mainText" style="width:100%; min-height:300px; border:none; outline:none; font-size:16px; line-height:1.7; resize:none;" placeholder="완벽하지 않아도 괜찮아요..."></textarea>
@@ -97,22 +107,11 @@
       <span id="saveStatus" style="font-size:12px; color:#999;">임시저장 완료</span>
       <label style="font-size:13px;"><input type="checkbox" id="isPvt"> 나만 보기</label>
     </div>
-    <button onclick="submitPost()" style="width:100%; background:#3D5A3E; color:white; border:none; padding:18px; border-radius:12px; font-size:16px; font-weight:bold; margin-top:20px;">에세이 제출하기</button>
+    <button onclick="submitPost()" class="btn-main" style="margin-top:20px;">에세이 제출하기</button>
   </div>
+
   <div class="content hidden" id="tab-feed"><div id="feedList"></div></div>
   <div class="content hidden" id="tab-member"><div class="list-header">참여 멤버</div><div id="memberList"></div></div>
-</div>
-
-<div id="profileModal" class="modal-overlay hidden">
-  <div class="modal">
-    <h3 style="margin:0 0 20px;">프로필 수정</h3>
-    <input id="editNameInput" style="margin-bottom:20px;">
-    <div style="display:flex; gap:10px;">
-      <button onclick="updateNickname()" style="flex:1; padding:12px; background:#3D5A3E; color:white; border:none; border-radius:8px; font-weight:bold;">변경</button>
-      <button onclick="logout()" style="flex:1; padding:12px; background:#F0F0F0; color:#666; border:none; border-radius:8px;">로그아웃</button>
-    </div>
-    <button onclick="toggleModal('profileModal', false)" style="width:100%; background:none; border:none; margin-top:15px; color:#999;">닫기</button>
-  </div>
 </div>
 
 <script type="module">
@@ -136,119 +135,108 @@ let isAdmin = localStorage.getItem("essay_role") === "admin";
 let userMap = {};
 let adminClickCount = 0;
 
-window.goStep2 = () => {
-  const phone = document.getElementById('phoneInput').value.trim();
-  if(!phone) return alert("번호를 입력해 주세요.");
-  document.getElementById('step1').classList.add('hidden');
-  document.getElementById('step2').classList.remove('hidden');
-  document.getElementById('loginGuide').innerHTML = "거의 다 됐어요!<br>닉네임만 정하면 입장이 가능합니다.";
+// [비밀 통로] 제목 5번 클릭 시 마스터 단계로 이동
+window.triggerAdmin = () => {
+  adminClickCount++;
+  if(adminClickCount >= 5) {
+    document.getElementById('step1').classList.add('hidden');
+    document.getElementById('step2').classList.add('hidden');
+    document.getElementById('masterStep').classList.remove('hidden');
+    document.getElementById('loginGuide').innerHTML = "Welcome Back, Master.";
+    adminClickCount = 0;
+  }
 }
 
+// [마스터 하이패스 입장]
+window.masterLogin = async function() {
+  const code = document.getElementById('masterCodeInput').value.trim();
+  if(code !== "0519") return alert("코드가 일치하지 않습니다.");
+  
+  // 마스터 전용 고유 ID 부여
+  const masterId = "master_admin";
+  await setDoc(doc(db, "profiles", masterId), { nickname: "Master" }, { merge: true });
+  
+  localStorage.setItem("essay_uid", masterId);
+  localStorage.setItem("essay_role", "admin");
+  location.reload();
+}
+
+// [일반 멤버 입장 단계]
 window.goStep1 = () => {
+  document.getElementById('masterStep').classList.add('hidden');
   document.getElementById('step2').classList.add('hidden');
   document.getElementById('step1').classList.remove('hidden');
   document.getElementById('loginGuide').innerHTML = "반가워요!<br>당신의 문장이 시작되는 곳입니다.";
 }
-
-window.triggerAdmin = () => {
-  adminClickCount++;
-  if(adminClickCount === 5) {
-    document.getElementById('adminEntrance').classList.remove('hidden');
-    alert("관리자 비밀 통로가 활성화되었습니다.");
-  }
+window.goStep2 = () => {
+  if(!document.getElementById('phoneInput').value.trim()) return alert("번호를 입력해 주세요.");
+  document.getElementById('step1').classList.add('hidden');
+  document.getElementById('step2').classList.remove('hidden');
 }
 
 window.finalLogin = async function() {
   const phone = document.getElementById('phoneInput').value.trim();
   const name = document.getElementById('nameInput').value.trim();
-  const code = document.getElementById('codeInput').value.trim();
-  const btn = document.getElementById('finalBtn');
-  
   if(!name) return alert("닉네임을 입력해 주세요.");
   
-  btn.disabled = true;
-  btn.textContent = "입장 중...";
-
-  try {
-    // 닉네임 저장 시도
-    await setDoc(doc(db, "profiles", phone), { nickname: name }, { merge: true });
-    
-    // 성공 시 로컬 저장
-    localStorage.setItem("essay_uid", phone);
-    if(code === "MASTER7") localStorage.setItem("essay_role", "admin");
-    
-    // 즉시 새로고침하여 메인 화면 진입
-    location.reload();
-  } catch (error) {
-    console.error("로그인 에러:", error);
-    alert("입장하는 동안 오류가 발생했습니다. 다시 시도해 주세요.");
-    btn.disabled = false;
-    btn.textContent = "클럽 입장하기";
-  }
+  await setDoc(doc(db, "profiles", phone), { nickname: name }, { merge: true });
+  localStorage.setItem("essay_uid", phone);
+  location.reload();
 }
 
-window.logout = () => { if(confirm("로그아웃 하시겠습니까?")) { localStorage.clear(); location.reload(); } }
+// 실시간 동기화 데이터 로드
+function initRealtime() {
+  const today = new Date().toLocaleDateString();
 
-window.updateNickname = async () => {
-  const newName = document.getElementById('editNameInput').value.trim();
-  if(newName) {
-    try {
-      await setDoc(doc(db, "profiles", myId), { nickname: newName }, { merge: true });
-      toggleModal('profileModal', false);
-    } catch(e) { alert("변경 중 오류가 발생했습니다."); }
-  }
+  // 1. 프로필 감시 (입장만 해도 멤버 리스트에 노출)
+  onSnapshot(collection(db, "profiles"), (pSnap) => {
+    const profiles = {};
+    pSnap.forEach(d => { profiles[d.id] = d.data().nickname; });
+    userMap = profiles;
+
+    if(myId && userMap[myId]) document.getElementById('myCircle').textContent = userMap[myId][0];
+
+    // 2. 게시글 감시 (제출 현황 동기화)
+    onSnapshot(collection(db, "posts"), (postSnap) => {
+      const doneIds = new Set();
+      const counts = {};
+      postSnap.forEach(s => {
+        const d = s.data();
+        if(d.uid) {
+          counts[d.uid] = (counts[d.uid] || 0) + 1;
+          if(d.createdAt && new Date(d.createdAt.toDate()).toLocaleDateString() === today) doneIds.add(d.uid);
+        }
+      });
+
+      const render = (elId, isM) => {
+        const el = document.getElementById(elId);
+        if(!el) return; el.innerHTML = "";
+        Object.keys(userMap).forEach(id => {
+          const n = userMap[id];
+          const isMe = (id === myId);
+          el.innerHTML += `<div class="list-item"><div class="item-profile">${n[0]}</div><div class="item-info"><b>${n}${isMe?' (나)':''}</b>${isM?`<div style='font-size:11px;color:#999;'>에세이 ${counts[id]||0}편</div>`:''}</div>${!isM?`<div class="badge ${doneIds.has(id)?'done':''}">${doneIds.has(id)?'제출':'미제출'}</div>`:''}</div>`;
+        });
+      }
+      render('statusList', false); render('memberList', true);
+    });
+  });
 }
 
-window.toggleModal = (id, show) => document.getElementById(id).classList.toggle('hidden', !show);
-
-onSnapshot(collection(db, "profiles"), (snap) => {
-  snap.forEach(d => { userMap[d.id] = d.data().nickname; });
-  if(myId && userMap[myId]) {
-    document.getElementById('myCircle').textContent = userMap[myId][0];
-    document.getElementById('editNameInput').value = userMap[myId];
-  }
-});
-
+// 초기화 실행
 if(myId) {
   document.getElementById('loginView').classList.add('hidden');
   document.getElementById('mainView').classList.remove('hidden');
   if(isAdmin) {
     document.getElementById('adminBox').classList.remove('hidden');
-    document.getElementById('adminIndicator').textContent = "● 관리자 권한";
+    document.getElementById('adminIndicator').textContent = "● Master Mode";
   }
-  loadAll();
+  initRealtime();
 }
 
+// 임시저장
 const textEl = document.getElementById('mainText');
 textEl.value = localStorage.getItem("essay_draft") || "";
 textEl.addEventListener('input', () => localStorage.setItem("essay_draft", textEl.value));
-
-function loadAll() {
-  const today = new Date().toLocaleDateString();
-  onSnapshot(collection(db, "posts"), (snap) => {
-    const all = new Set([myId]);
-    const done = new Set();
-    const counts = {};
-    snap.forEach(s => {
-      const d = s.data();
-      if(d.uid) {
-        all.add(d.uid);
-        counts[d.uid] = (counts[d.uid] || 0) + 1;
-        if(d.createdAt && new Date(d.createdAt.toDate()).toLocaleDateString() === today) done.add(d.uid);
-      }
-    });
-
-    const render = (elId, isM) => {
-      const el = document.getElementById(elId);
-      if(!el) return; el.innerHTML = "";
-      Array.from(all).forEach(id => {
-        const n = userMap[id] || "멤버";
-        el.innerHTML += `<div class="list-item"><div class="item-profile">${n[0]}</div><div class="item-info"><b>${n}</b>${isM?`<div style='font-size:11px;color:#999;'>에세이 ${counts[id]||0}편</div>`:''}</div>${!isM?`<div class="badge ${done.has(id)?'done':''}">${done.has(id)?'제출':'미제출'}</div>`:''}</div>`;
-      });
-    }
-    render('statusList', false); render('memberList', true);
-  });
-}
 
 onSnapshot(query(collection(db, "posts"), orderBy("createdAt", "desc")), (snap) => {
   const feed = document.getElementById('feedList');
@@ -267,13 +255,11 @@ onSnapshot(query(collection(db, "posts"), orderBy("createdAt", "desc")), (snap) 
 window.submitPost = async () => {
   const t = textEl.value.trim();
   if(!t) return;
-  try {
-    await addDoc(collection(db, "posts"), { uid: myId, text: t, isPrivate: document.getElementById('isPvt').checked, createdAt: serverTimestamp() });
-    textEl.value = ""; localStorage.removeItem("essay_draft"); switchTab('feed');
-  } catch(e) { alert("제출에 실패했습니다."); }
+  await addDoc(collection(db, "posts"), { uid: myId, text: t, isPrivate: document.getElementById('isPvt').checked, createdAt: serverTimestamp() });
+  textEl.value = ""; localStorage.removeItem("essay_draft"); switchTab('feed');
 }
 
-window.deletePost = async (id) => { if(confirm("삭제할까요?")) await deleteDoc(doc(db, "posts", id)); }
+window.deletePost = async (id) => { if(confirm("영구 삭제하시겠습니까?")) await deleteDoc(doc(db, "posts", id)); }
 window.switchTab = (id) => {
   ['today', 'write', 'feed', 'member'].forEach(v => { document.getElementById('tab-'+v).classList.add('hidden'); document.getElementById('btn-'+v).classList.remove('active'); });
   document.getElementById('tab-'+id).classList.remove('hidden'); document.getElementById('btn-'+id).classList.add('active');
@@ -282,6 +268,7 @@ window.saveKeyword = async () => {
   const t = document.getElementById('keywordInput').value.trim();
   if(t) await addDoc(collection(db, "keywords"), { text: t, date: Date.now() });
   document.getElementById('keywordInput').value = "";
+  alert("새 글감이 모든 멤버에게 배달되었습니다!");
 }
 onSnapshot(query(collection(db, "keywords"), orderBy("date", "desc"), limit(1)), (snap) => {
   snap.forEach(d => document.getElementById('dispKeyword').textContent = d.data().text);
