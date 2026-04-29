@@ -2,72 +2,227 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>글쓰기 클럽</title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#3D5A3E">
 
 <style>
-body {margin:0;background:#F7F5F0;font-family:sans-serif;}
-.app {max-width:420px;margin:auto;background:white;min-height:100vh;padding:16px;box-sizing:border-box;}
-input,button,textarea {width:100%;padding:12px;margin-top:10px;font-size:16px;box-sizing:border-box;}
-button {background:#3D5A3E;color:white;border:none;border-radius:8px;}
-.hidden {display:none;}
-.feed-item {border-bottom:1px solid #eee;padding:10px 0;}
-.small {font-size:12px;color:#999;}
+  /* 기본 설정 */
+  body { margin: 0; background: #F7F5F0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: #333; }
+  * { box-sizing: border-box; }
+  .app { max-width: 420px; margin: auto; background: #F7F5F0; min-height: 100vh; display: flex; flex-direction: column; }
+  button { cursor: pointer; font-family: inherit; }
+  .hidden { display: none !important; }
+
+  /* 헤더 영역 */
+  .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 20px 10px; }
+  .header-title h1 { margin: 0; font-size: 20px; color: #222; }
+  .header-title p { margin: 4px 0 0; font-size: 12px; color: #888; }
+  .profile-circle { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #3D5A3E; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #3D5A3E; background: transparent; }
+  
+  /* 탭 메뉴 */
+  .tab-nav { display: flex; border-bottom: 1px solid #E5E5E5; padding: 0 10px; }
+  .tab-btn { flex: 1; background: none; border: none; padding: 12px 0; font-size: 14px; color: #999; border-bottom: 2px solid transparent; transition: 0.2s; }
+  .tab-btn.active { color: #3D5A3E; font-weight: bold; border-bottom: 2px solid #3D5A3E; }
+
+  /* 콘텐츠 영역 */
+  .content { padding: 20px; flex: 1; overflow-y: auto; }
+
+  /* 글감 카드 */
+  .keyword-card { background: #E8F0E9; border: 1px solid #C5D8C6; border-radius: 12px; padding: 20px; margin-bottom: 24px; position: relative; overflow: hidden; }
+  .keyword-card::after { content: ''; position: absolute; right: -20px; top: -20px; width: 80px; height: 80px; background: rgba(255,255,255,0.4); border-radius: 50%; }
+  .keyword-label { font-size: 12px; color: #555; font-weight: bold; margin-bottom: 8px; }
+  .keyword-text { font-size: 24px; color: #222; font-weight: bold; margin: 0 0 8px; }
+  .keyword-sub { font-size: 12px; color: #888; margin: 0; }
+
+  /* 리스트 (제출 현황 / 멤버) */
+  .list-header { font-size: 12px; color: #888; margin-bottom: 12px; }
+  .list-item { display: flex; align-items: center; padding: 16px 0; border-bottom: 1px solid #EAE8E3; }
+  .list-item:last-child { border-bottom: none; }
+  .item-profile { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; margin-right: 12px; }
+  .item-profile.p1 { background: #EAE6FE; color: #6C5CE7; }
+  .item-profile.p2 { background: #E3F2E9; color: #27AE60; }
+  .item-profile.p3 { background: #FCE8ED; color: #E84393; }
+  .item-profile.p4 { background: #FFF0D4; color: #D35400; }
+  .item-profile.p5 { background: #E8F0E9; color: #3D5A3E; }
+  .item-info { flex: 1; }
+  .item-name { font-size: 15px; color: #222; font-weight: 500; }
+  .item-sub { font-size: 12px; color: #888; margin-top: 4px; }
+  
+  /* 배지 & 버튼 */
+  .badge { font-size: 12px; padding: 6px 10px; border-radius: 16px; border: 1px solid #CCC; color: #888; background: transparent; }
+  .badge.done { border-color: #3D5A3E; color: #3D5A3E; }
+  .btn-text { font-size: 13px; color: #666; text-decoration: none; background: none; border: none; }
+  .btn-main { display: block; width: 100%; background: #3D5A3E; color: white; border: none; padding: 16px; border-radius: 8px; font-size: 16px; font-weight: bold; margin-top: 20px; text-align: center; }
+
+  /* 쓰기 화면 */
+  .write-area { background: #F0EEE7; border: 1px solid #EAE8E3; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+  .write-area label { display: block; font-size: 12px; color: #888; margin-bottom: 8px; }
+  .write-area textarea { width: 100%; min-height: 200px; background: transparent; border: none; font-size: 15px; color: #333; resize: none; outline: none; line-height: 1.6; }
+  .write-area textarea::placeholder { color: #AAA; }
+  .action-box { display: flex; align-items: center; justify-content: space-between; background: #EAE8E3; padding: 16px; border-radius: 8px; margin-bottom: 16px; }
+  .action-text { font-size: 13px; color: #666; }
+  .btn-sub { background: none; border: none; color: #333; font-size: 14px; font-weight: bold; }
+  
+  /* 토글 스위치 */
+  .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #CCC; border-radius: 24px; transition: .3s; }
+  .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .3s; }
+  input:checked + .slider { background: #C5D8C6; }
+  input:checked + .slider:before { transform: translateX(20px); background: #3D5A3E; }
+  
+  .btn-group { display: flex; gap: 10px; }
+  .btn-group button { flex: 1; padding: 16px; border-radius: 8px; font-size: 16px; font-weight: bold; border: none; }
+  .btn-draft { background: #EAE8E3; color: #666; }
+
+  /* 피드 화면 */
+  .feed-item { border-bottom: 1px solid #EAE8E3; padding: 24px 0; }
+  .feed-header { display: flex; align-items: center; margin-bottom: 12px; }
+  .feed-name { font-weight: bold; font-size: 15px; margin: 0 8px; }
+  .feed-time { font-size: 12px; color: #999; }
+  .feed-title { font-size: 18px; font-weight: bold; margin: 0 0 12px; color: #222; }
+  .feed-text { font-size: 15px; line-height: 1.6; color: #444; margin-bottom: 16px; white-space: pre-wrap; }
+  .feed-actions { display: flex; gap: 8px; }
+  .action-chip { border: 1px solid #DDD; background: white; border-radius: 16px; padding: 6px 12px; font-size: 12px; color: #666; }
+  .private-post { color: #999; font-style: italic; }
+
+  /* 멤버 탭 (초대 카드) */
+  .invite-card { background: #EBE8F5; border: 1px solid #D5CFF0; border-radius: 12px; padding: 30px 20px; text-align: center; margin-bottom: 30px; }
+  .invite-label { font-size: 12px; color: #666; }
+  .invite-code { font-size: 32px; font-weight: bold; color: #3A3163; margin: 10px 0; letter-spacing: 2px; }
+  .btn-copy { background: transparent; border: 1px solid #3A3163; color: #3A3163; padding: 8px 24px; border-radius: 20px; font-size: 13px; margin-top: 10px; }
+
+  /* 빈 화면 안내문 */
+  .empty-state { text-align: center; padding: 60px 20px; color: #999; font-size: 14px; line-height: 1.6; }
 </style>
 </head>
-
 <body>
 
-<div class="app">
-
-<div id="login">
-  <h3>같이 쓰는 공간이에요</h3>
-  <input id="codeInput" placeholder="초대코드를 입력해 주세요">
-  <button onclick="login()">들어가기</button>
-  <div id="error" style="color:red;font-size:12px;"></div>
+<div class="app" id="loginView">
+  <div style="padding: 40px 20px; text-align: center;">
+    <h2>글쓰기 클럽</h2>
+    <p style="color:#666; font-size:14px;">같이 쓰는 공간이에요</p>
+    <input id="codeInput" placeholder="초대코드 (ESSAY7)" style="width:100%; padding:16px; border:1px solid #DDD; border-radius:8px; margin-top:20px; font-size:16px; box-sizing:border-box;">
+    <button onclick="login()" class="btn-main">들어가기</button>
+    <div id="error" style="color:red; font-size:12px; margin-top:10px;"></div>
+  </div>
 </div>
 
-<div id="main" class="hidden">
-
-  <h2>글쓰기 클럽</h2>
-
-  <h3 id="keywordText">불러오는 중...</h3>
-
-  <div id="adminBox" style="display:none;">
-    <input id="keywordInput" placeholder="새 글감 입력">
-    <button onclick="saveKeyword()">글감 변경</button>
+<div class="app hidden" id="mainView">
+  <div class="header">
+    <div class="header-title">
+      <h1>글쓰기 클럽</h1>
+      <p>멤버들이 참여 중</p>
+    </div>
+    <div class="profile-circle">나</div>
   </div>
 
-  <button onclick="show('write')">글 쓰기</button>
-  <button onclick="show('feed')">피드</button>
-
-  <div id="write" style="display:none">
-    <textarea id="text" placeholder="완벽하지 않아도 괜찮아요." style="min-height:120px;"></textarea>
-    <label><input type="checkbox" id="private" style="width:auto;"> 나만 보기</label>
-    <button onclick="submit()">글 남기기</button>
+  <div class="tab-nav">
+    <button class="tab-btn active" id="btn-today" onclick="switchTab('today')">오늘</button>
+    <button class="tab-btn" id="btn-write" onclick="switchTab('write')">쓰기</button>
+    <button class="tab-btn" id="btn-feed" onclick="switchTab('feed')">피드</button>
+    <button class="tab-btn" id="btn-member" onclick="switchTab('member')">멤버</button>
   </div>
 
-  <div id="feedView">
-    <div id="feed"></div>
+  <div class="content" id="tab-today">
+    <div class="keyword-card">
+      <div class="keyword-label">오늘의 글감</div>
+      <h2 class="keyword-text" id="todayKeyword1">불러오는 중...</h2>
+      <p class="keyword-sub">오늘 자정까지 제출</p>
+    </div>
 
-    <h4 style="margin-top:20px;">지난 글감</h4>
-    <div id="historyList"></div>
+    <div id="adminBox" style="display:none; background:#EAE8E3; padding:16px; border-radius:8px; margin-bottom:24px;">
+      <input id="keywordInput" placeholder="새 글감 입력" style="width:100%; padding:12px; border:1px solid #CCC; border-radius:4px; margin-bottom:10px;">
+      <button onclick="saveKeyword()" class="btn-main" style="margin-top:0; padding:12px;">글감 변경하기</button>
+    </div>
+
+    <div class="list-header">제출 현황</div>
+    <div class="list-item">
+      <div class="item-profile p1">지</div>
+      <div class="item-info"><div class="item-name">지현</div></div>
+      <div class="badge done">제출 완료</div>
+    </div>
+    <div class="list-item">
+      <div class="item-profile p5">나</div>
+      <div class="item-info"><div class="item-name">나</div></div>
+      <div class="badge">미제출</div>
+    </div>
+    
+    <button class="btn-main" onclick="switchTab('write')">오늘 에세이 쓰러 가기</button>
   </div>
 
-</div>
+  <div class="content hidden" id="tab-write">
+    <div class="keyword-card">
+      <div class="keyword-label">오늘의 글감</div>
+      <h2 class="keyword-text" id="todayKeyword2">불러오는 중...</h2>
+    </div>
+
+    <div class="write-area">
+      <label>자유롭게 써보세요</label>
+      <textarea id="text" placeholder="여기에 에세이를 입력하세요..."></textarea>
+    </div>
+
+    <div class="action-box">
+      <div class="action-text">● 임시저장 없음</div>
+      <button class="btn-sub">저장</button>
+    </div>
+
+    <div class="action-box">
+      <div>
+        <div style="font-weight:bold; font-size:14px; margin-bottom:4px;">공개</div>
+        <div style="font-size:12px; color:#888;">멤버 모두가 피드에서 볼 수 있어요</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="privateToggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="btn-group">
+      <button class="btn-draft">임시저장</button>
+      <button class="btn-main" style="margin-top:0;" onclick="submitPost()">제출하기</button>
+    </div>
+  </div>
+
+  <div class="content hidden" id="tab-feed">
+    <div id="feedList"></div>
+  </div>
+
+  <div class="content hidden" id="tab-member">
+    <div class="invite-card">
+      <div class="invite-label">초대 코드</div>
+      <div class="invite-code" id="inviteCodeText">ESSAY7</div>
+      <div class="invite-label">이 코드를 공유해 멤버를 초대하세요</div>
+      <button class="btn-copy" onclick="copyCode()">코드 복사</button>
+    </div>
+
+    <div class="list-header">멤버 목록</div>
+    <div class="list-item">
+      <div class="item-profile p1">지</div>
+      <div class="item-info">
+        <div class="item-name">지현</div>
+        <div class="item-sub">에세이 0편</div>
+      </div>
+      <button class="btn-text">보기 →</button>
+    </div>
+    <div class="list-item">
+      <div class="item-profile p5">나</div>
+      <div class="item-info">
+        <div class="item-name">나</div>
+        <div class="item-sub">에세이 0편</div>
+      </div>
+      <button class="btn-text">보기 →</button>
+    </div>
+  </div>
 
 </div>
 
 <script type="module">
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-import {
-  getFirestore, collection, addDoc, onSnapshot,
-  query, orderBy, updateDoc, doc, limit
-} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, updateDoc, doc, limit } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
 // Firebase 설정
 const firebaseConfig = {
@@ -82,156 +237,141 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// 로그인
+// 로그인 로직
 const INVITE_CODE = "ESSAY7";
 const ADMIN_CODE = "MASTER7";
-const LOGIN_KEY = "essay_login";
-
 let isAdmin = false;
 
-// 자동 로그인
-const role = localStorage.getItem(LOGIN_KEY);
-if(role){
-  if(role === "admin") isAdmin = true;
+if(localStorage.getItem("essay_login")){
+  if(localStorage.getItem("essay_login") === "admin") isAdmin = true;
   enterApp();
 }
 
 window.login = function(){
   const code = document.getElementById('codeInput').value.trim();
-
-  if(code === INVITE_CODE){
-    localStorage.setItem(LOGIN_KEY, "user");
-    enterApp();
-  }
-  else if(code === ADMIN_CODE){
-    localStorage.setItem(LOGIN_KEY, "admin");
-    isAdmin = true;
-    enterApp();
-  }
-  else {
-    document.getElementById('error').textContent = "코드를 다시 확인해 주세요";
-  }
+  if(code === INVITE_CODE){ localStorage.setItem("essay_login", "user"); enterApp(); }
+  else if(code === ADMIN_CODE){ localStorage.setItem("essay_login", "admin"); isAdmin = true; enterApp(); }
+  else { document.getElementById('error').textContent = "코드를 다시 확인해 주세요"; }
 };
 
 function enterApp(){
-  document.getElementById('login').classList.add('hidden');
-  document.getElementById('main').classList.remove('hidden');
-
-  if(isAdmin){
-    document.getElementById('adminBox').style.display = 'block';
-  }
+  document.getElementById('loginView').classList.add('hidden');
+  document.getElementById('mainView').classList.remove('hidden');
+  if(isAdmin) document.getElementById('adminBox').style.display = 'block';
 }
 
-// 화면 전환 (탭 방식)
-window.show = function(id){
-  if(id === 'write'){
-    document.getElementById('write').style.display = 'block';
-    document.getElementById('feedView').style.display = 'none';
-  } else if(id === 'feed'){
-    document.getElementById('write').style.display = 'none';
-    document.getElementById('feedView').style.display = 'block';
-  }
+// 탭 전환 로직
+window.switchTab = function(tabId){
+  ['today', 'write', 'feed', 'member'].forEach(id => {
+    document.getElementById('tab-' + id).classList.add('hidden');
+    document.getElementById('btn-' + id).classList.remove('active');
+  });
+  document.getElementById('tab-' + tabId).classList.remove('hidden');
+  document.getElementById('btn-' + tabId).classList.add('active');
 };
 
-// 글 작성
-window.submit = async function(){
-  const text = document.getElementById('text').value.trim();
-  const isPrivate = document.getElementById('private').checked;
-
-  if(!text) return;
-
-  await addDoc(collection(db,"posts"),{
-    text,
-    isPrivate,
-    likes:0,
-    createdAt: Date.now()
-  });
-
-  document.getElementById('text').value='';
-  document.getElementById('private').checked = false;
+// 글감 불러오기
+const keywordQuery = query(collection(db,"keywords"), orderBy("date","desc"), limit(1));
+onSnapshot(keywordQuery, (snapshot) => {
+  const text1 = document.getElementById('todayKeyword1');
+  const text2 = document.getElementById('todayKeyword2');
   
-  // 글 작성 후 피드 화면으로 자동 전환
-  show('feed');
-};
-
-// 피드
-const postQuery = query(collection(db,"posts"), orderBy("createdAt","desc"));
-
-onSnapshot(postQuery,(snapshot)=>{
-  const feed = document.getElementById('feed');
-  feed.innerHTML = "";
-
-  snapshot.forEach(docSnap=>{
-    const d = docSnap.data();
-
-    const div = document.createElement('div');
-    div.className="feed-item";
-
-    div.innerHTML = `
-      <div>${d.isPrivate ? '<span style="color:#999;">[나만 보기]</span> ' + d.text : d.text}</div>
-      ${!d.isPrivate ? `<button onclick="like('${docSnap.id}',${d.likes})">공감 ${d.likes}</button>`:''}
-    `;
-
-    feed.appendChild(div);
-  });
+  if(snapshot.empty){
+    text1.textContent = text2.textContent = "첫 번째 글감이 곧 도착해요 ✍️";
+  } else {
+    snapshot.forEach(doc => {
+      text1.textContent = text2.textContent = doc.data().text;
+    });
+  }
 });
 
-// 공감
-window.like = async function(id,likes){
-  await updateDoc(doc(db,"posts",id),{
-    likes:likes+1
-  });
-};
-
-// 글감 저장 (관리자)
+// 관리자 글감 저장
 window.saveKeyword = async function(){
   const text = document.getElementById('keywordInput').value.trim();
   if(!text) return;
-
-  await addDoc(collection(db,"keywords"),{
-    text,
-    date: Date.now()
-  });
-
+  await addDoc(collection(db,"keywords"),{ text, date: Date.now() });
   document.getElementById('keywordInput').value='';
 };
 
-// 오늘 글감
-const keywordQuery = query(collection(db,"keywords"), orderBy("date","desc"), limit(1));
+// 글 제출하기
+window.submitPost = async function(){
+  const text = document.getElementById('text').value.trim();
+  const isPrivate = document.getElementById('privateToggle').checked; // 체크되면 비공개 처리
 
-onSnapshot(keywordQuery,(snapshot)=>{
-  snapshot.forEach(doc=>{
-    document.getElementById('keywordText').textContent = doc.data().text;
+  if(!text) return;
+  await addDoc(collection(db,"posts"),{
+    text, isPrivate, likes:0, createdAt: Date.now()
   });
+
+  document.getElementById('text').value='';
+  document.getElementById('privateToggle').checked = false;
+  switchTab('feed');
+};
+
+// 피드 불러오기
+const postQuery = query(collection(db,"posts"), orderBy("createdAt","desc"));
+onSnapshot(postQuery, (snapshot) => {
+  const feedList = document.getElementById('feedList');
+  feedList.innerHTML = "";
+
+  if(snapshot.empty){
+    feedList.innerHTML = "<div class='empty-state'>아직 올라온 에세이가 없어요.<br>첫 번째 에세이의 주인공이 되어주세요!</div>";
+  } else {
+    snapshot.forEach(docSnap => {
+      const d = docSnap.data();
+      const div = document.createElement('div');
+      div.className = "feed-item";
+
+      // 제목(첫 줄)과 본문 분리
+      const lines = d.text.split('\n');
+      const title = lines[0];
+      const content = lines.slice(1).join('\n');
+
+      if(d.isPrivate){
+        div.innerHTML = `
+          <div class="feed-header">
+            <div class="item-profile p5">익명</div>
+            <span class="feed-name">익명</span> <span class="feed-time">오늘</span>
+          </div>
+          <div class="feed-title private-post">(비공개 에세이)</div>
+          <div class="feed-text private-post">이 글은 비공개로 작성되었습니다.</div>
+        `;
+      } else {
+        div.innerHTML = `
+          <div class="feed-header">
+            <div class="item-profile p5">글</div>
+            <span class="feed-name">글쓴이</span> <span class="feed-time">오늘</span>
+          </div>
+          <div class="feed-title">${title}</div>
+          <div class="feed-text">${content}</div>
+          <div class="feed-actions">
+            <button class="action-chip" onclick="like('${docSnap.id}',${d.likes})">♡ ${d.likes}</button>
+            <button class="action-chip">댓글 쓰기</button>
+          </div>
+        `;
+      }
+      feedList.appendChild(div);
+    });
+  }
 });
 
-// 히스토리
-const historyQuery = query(collection(db,"keywords"), orderBy("date","desc"));
+// 공감 버튼
+window.like = async function(id, likes){
+  await updateDoc(doc(db,"posts",id),{ likes: likes+1 });
+};
 
-onSnapshot(historyQuery,(snapshot)=>{
-  const list = document.getElementById('historyList');
-  list.innerHTML = "";
-
-  snapshot.forEach(doc=>{
-    const d = doc.data();
-    const date = new Date(d.date);
-    const str = `${date.getMonth()+1}/${date.getDate()}`;
-
-    const div = document.createElement('div');
-    div.innerHTML = `
-      <div class="small">${str}</div>
-      <div>${d.text}</div>
-    `;
-    list.appendChild(div);
+// 초대코드 복사 기능
+window.copyCode = function(){
+  const text = document.getElementById('inviteCodeText').innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    alert("초대 코드가 복사되었습니다!");
   });
-});
+};
 
 // PWA
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("service-worker.js");
 }
-
 </script>
-
 </body>
 </html>
