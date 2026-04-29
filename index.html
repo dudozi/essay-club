@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>에세이 클럽</title>
 
 <link rel="manifest" href="manifest.json">
@@ -19,34 +19,49 @@
   body { margin: 0; background: var(--bg); font-family: -apple-system, sans-serif; color: var(--main); overflow: hidden; height: 100vh; position: fixed; width: 100%; }
   * { box-sizing: border-box; }
   .app { max-width: 420px; margin: auto; height: 100vh; display: flex; flex-direction: column; position: relative; border-left: 1px solid #EEE; border-right: 1px solid #EEE; }
-  .content { padding: 0 24px 100px; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .content { padding: 0 24px 120px; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   .hidden { display: none !important; }
 
-  /* 헤더/섹션 디자인 */
+  /* 헤더/인사말 */
   .header { padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
   .header h1 { font-size: 20px; font-weight: 800; text-decoration: underline; cursor: pointer; margin: 0; }
   .welcome-section { padding: 40px 0 20px; border-bottom: 2px solid var(--main); margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
   .welcome-msg { font-size: 24px; font-weight: 400; line-height: 1.4; margin: 0; }
-  .welcome-msg b { font-weight: 700; /* 밑줄 제거됨 */ }
-  
+  .welcome-msg b { font-weight: 700; text-decoration: none !important; }
+
   /* 글감 배너 */
-  .keyword-banner { background: #f9f9f9; border: 2px solid var(--main); border-radius: 16px; padding: 15px; margin-bottom: 20px; font-size: 14px; }
+  .keyword-banner { background: #f9f9f9; border: 2px solid var(--main); border-radius: 16px; padding: 15px; margin-bottom: 20px; font-size: 14px; line-height: 1.5; }
   .keyword-card { border: 2.5px solid var(--main); border-radius: 24px; padding: 30px; margin-bottom: 35px; box-shadow: 8px 8px 0px var(--main); }
   
-  /* 리스트/피드 스타일 */
+  /* 멤버 리스트 */
   .status-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .status-item { border: 2px solid var(--main); padding: 15px; border-radius: 20px; display: flex; align-items: center; gap: 10px; background: white; }
   .mini-profile { width: 32px; height: 32px; border-radius: 50%; background: var(--main); color: #FFF; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; }
   .badge { font-size: 9px; border: 1px solid #111; padding: 2px 6px; border-radius: 6px; margin-top: 4px; display: inline-block; }
   
+  /* 피드 디자인 */
   .feed-card { border: 2px solid #111; border-radius: 20px; padding: 20px; margin-bottom: 15px; background: #FFF; position: relative; }
   .feed-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
-  .feed-actions { display: flex; gap: 8px; font-size: 12px; }
+  .feed-info { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .feed-time { font-size: 11px; color: #999; font-weight: 600; }
+  .feed-actions { display: flex; gap: 8px; font-size: 11px; }
   .action-btn { cursor: pointer; text-decoration: underline; color: #666; }
+  .empty-msg { text-align: center; padding: 60px 20px; color: #999; font-size: 15px; line-height: 1.6; }
 
-  /* 하단 네비게이션 */
-  .tab-nav { display: flex; background: #FFF; border-top: 2px solid var(--main); padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); position: absolute; bottom: 0; width: 100%; gap: 8px; z-index: 1000; }
-  .tab-btn { flex: 1; border: 2px solid var(--main); padding: 12px; background: #FFF; border-radius: 12px; font-size: 13px; font-weight: bold; cursor: pointer; outline: none; }
+  /* 📍 탭 네비게이션 여백 수정 (스와이프 바 대응) */
+  .tab-nav { 
+    display: flex; 
+    background: #FFF; 
+    border-top: 2px solid var(--main); 
+    /* 하단 여백: 기기 기본 안전 여백 + 15px 추가 */
+    padding: 12px 16px calc(15px + env(safe-area-inset-bottom)); 
+    position: absolute; 
+    bottom: 0; 
+    width: 100%; 
+    gap: 8px; 
+    z-index: 1000; 
+  }
+  .tab-btn { flex: 1; border: 2px solid var(--main); padding: 14px; background: #FFF; border-radius: 12px; font-size: 13px; font-weight: bold; cursor: pointer; outline: none; }
   .tab-btn.active { background: var(--main); color: #FFF; }
 
   .btn-next { width: 100%; padding: 20px; background: var(--main); color: #FFF; border: none; border-radius: 16px; font-size: 16px; font-weight: 800; cursor: pointer; }
@@ -77,15 +92,13 @@
 
     <div class="content hidden" id="tab-write">
         <div style="padding-top:40px;">
-            <div class="keyword-banner">
-                <b>💡 오늘의 글감:</b> <span id="writeTabKeyword">...</span>
-            </div>
+            <div class="keyword-banner"><b>💡 오늘의 글감:</b> <span id="writeTabKeyword">...</span></div>
             <h2 style="font-weight:800; margin-bottom:5px;">문장 젓기</h2>
             <input id="postTitle" type="text" placeholder="제목을 입력하세요 (선택)" style="padding: 12px 18px; font-weight: 700;">
             <div id="charCount" style="font-size:12px; color:#999; margin-bottom:10px; font-weight:600;">0 / 1,000자</div>
             <textarea id="postText" style="height:250px;" placeholder="글감에 대한 생각을 자유롭게 적어보세요."></textarea>
             <label style="display:flex; align-items:center; gap:8px; margin-bottom:20px; font-weight:600; font-size:14px; cursor:pointer;">
-                <input type="checkbox" id="isPrivate" style="width:18px; height:18px; margin:0;"> 비밀글로 업로드하기
+                <input type="checkbox" id="isPrivate"> 비밀글로 업로드하기
             </label>
             <button id="submitBtn" onclick="submitPost()" class="btn-next" style="opacity:0.3;" disabled>에세이 제출하기</button>
         </div>
@@ -127,7 +140,15 @@
     </div>
   </div>
 
+  <div id="editProfileModal" class="modal-overlay hidden" style="background: rgba(0,0,0,0.5);">
+    <div class="modal" style="padding:30px 24px; background:#FFF; border:2px solid #111; border-radius:24px; width:85%; text-align:center;">
+      <h3 style="font-weight:800; margin-bottom:15px;">닉네임 수정</h3>
+      <input id="editNickInput" placeholder="새 닉네임 입력">
+      <button onclick="updateProfile()" class="btn-next" style="padding:15px;">저장하기</button>
+      <button onclick="toggleModal('editProfileModal', false)" style="background:none; border:none; margin-top:15px; color:#999; font-size:14px; cursor:pointer;">닫기</button>
+    </div>
   </div>
+</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
@@ -146,27 +167,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 let myId = localStorage.getItem("essay_uid");
 
-window.onload = () => {
-    if(!myId) toggleModal('authModal', true);
-    else startApp(myId);
-};
-
-window.checkUser = async () => {
-    const phone = document.getElementById('phoneInput').value.trim();
-    if(phone.length < 10) return alert("번호를 확인해주세요.");
-    myId = phone;
-    const userDoc = await getDoc(doc(db, "profiles", myId));
-    if(userDoc.exists()) { localStorage.setItem("essay_uid", myId); location.reload(); }
-    else { document.getElementById('authStep1').classList.add('hidden'); document.getElementById('authStep2').classList.remove('hidden'); }
-};
-
-window.finishJoin = async () => {
-    const nick = document.getElementById('nickInput').value.trim();
-    if(!nick) return alert("닉네임을 적어주세요.");
-    await setDoc(doc(db, "profiles", myId), { nickname: nick, joinedAt: new Date() });
-    localStorage.setItem("essay_uid", myId);
-    location.reload();
-};
+window.onload = () => { if(!myId) toggleModal('authModal', true); else startApp(myId); };
 
 window.switchTab = (id) => {
     document.querySelectorAll('.content').forEach(c => c.classList.add('hidden'));
@@ -174,7 +175,6 @@ window.switchTab = (id) => {
     document.getElementById('tab-'+id).classList.remove('hidden');
     document.getElementById('btn-'+id)?.classList.add('active');
 };
-
 window.toggleModal = (id, show) => document.getElementById(id).classList.toggle('hidden', !show);
 
 const postArea = document.getElementById('postText');
@@ -188,15 +188,14 @@ postArea.addEventListener('input', () => {
 
 function startApp(uid) {
     onSnapshot(collection(db, "profiles"), (pSnap) => {
-        const userMap = {};
+        const userMap = {}; 
         pSnap.forEach(d => userMap[d.id] = d.data().nickname);
         
         onSnapshot(collection(db, "posts"), (postSnap) => {
             const today = new Date().toLocaleDateString();
-            const doneIds = new Set();
-            const allPosts = [];
+            const doneIds = new Set(); const allPosts = [];
             postSnap.forEach(s => {
-                const d = s.data();
+                const d = s.data(); 
                 if(d.createdAt && new Date(d.createdAt.toDate()).toLocaleDateString() === today) doneIds.add(d.uid);
                 allPosts.push({ id: s.id, ...d });
             });
@@ -207,33 +206,42 @@ function startApp(uid) {
                 ? `<b>${myName}</b>님,<br>이야기 남겨줘서 고마워요.` 
                 : `<b>${myName}</b>님,<br>오늘의 생각을 붙잡아 보세요!`;
             document.getElementById('myCircle').textContent = myName[0];
+            document.getElementById('editNickInput').value = myName;
+
+            const sList = document.getElementById('statusList'); 
+            const fList = document.getElementById('fullMemberList');
+            sList.innerHTML = ""; fList.innerHTML = "";
+            
+            Object.entries(userMap).forEach(([id, name]) => {
+                if(id === "master_admin") return;
+                const done = doneIds.has(id);
+                const html = `<div class="status-item"><div class="mini-profile">${name[0]}</div><div><b>${name}${id===uid?' (나)':''}</b><br><span class="badge" style="background:${done?'#111':'#FFF'}; color:${done?'#FFF':'#111'}; border:1px solid #111;">${done?'완료':'미완'}</span></div></div>`;
+                sList.innerHTML += html; fList.innerHTML += html;
+            });
 
             const feedEl = document.getElementById('feedList');
-            if(allPosts.length === 0) feedEl.innerHTML = `<div class="empty-msg">아직 글이 없습니다.</div>`;
-            else {
+            if(allPosts.length === 0) {
+                feedEl.innerHTML = `<div class="empty-msg">아직 올라온 글이 없어요.<br>첫 글의 주인공이 되어보세요!</div>`;
+            } else {
                 feedEl.innerHTML = "";
                 allPosts.sort((a,b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0)).forEach(p => {
-                    const name = userMap[p.uid] || "멤버";
+                    const postName = userMap[p.uid] || "멤버";
                     const isMyPost = p.uid === uid;
-                    const isPrivate = p.isPrivate && !isMyPost;
-                    const content = isPrivate ? `<span style="color:#999;">비밀글입니다. 🔒</span>` : p.text;
-                    const title = p.title ? `<h3 style="margin:0 0 8px; font-size:18px;">${p.title}</h3>` : "";
+                    const dateObj = p.createdAt?.toDate();
+                    const timeStr = dateObj ? `${(dateObj.getMonth()+1).toString().padStart(2,'0')}.${dateObj.getDate().toString().padStart(2,'0')} ${dateObj.getHours().toString().padStart(2,'0')}:${dateObj.getMinutes().toString().padStart(2,'0')}` : "";
+                    const content = (p.isPrivate && !isMyPost) ? `<span style="color:#999; font-style:italic;">비밀글입니다. 🔒</span>` : p.text;
+                    const titleHtml = p.title ? `<h3 style="margin:0 0 8px; font-size:18px; font-weight:800;">${p.title}</h3>` : "";
                     
                     feedEl.innerHTML += `
                         <div class="feed-card">
                             <div class="feed-header">
-                                <div style="display:flex; align-items:center; gap:8px;">
-                                    <div class="mini-profile">${name[0]}</div>
-                                    <b>${name}</b>${p.isPrivate?' 🔒':''}
+                                <div style="display:flex; align-items:center; gap:8px;"><div class="mini-profile">${postName[0]}</div><b>${postName}</b>${p.isPrivate?' 🔒':''}</div>
+                                <div class="feed-info">
+                                    <span class="feed-time">${timeStr}</span>
+                                    ${isMyPost ? `<div class="feed-actions"><span class="action-btn" onclick="editPost('${p.id}', '${p.title||''}', \`${p.text.replace(/`/g, '\\`')}\`)">수정</span> <span class="action-btn" onclick="deletePost('${p.id}')">삭제</span></div>` : ''}
                                 </div>
-                                ${isMyPost ? `
-                                    <div class="feed-actions">
-                                        <span class="action-btn" onclick="editPost('${p.id}', '${p.title||''}', \`${p.text.replace(/`/g, '\\`')}\`)">수정</span>
-                                        <span class="action-btn" onclick="deletePost('${p.id}')">삭제</span>
-                                    </div>
-                                ` : ''}
                             </div>
-                            ${title}
+                            ${titleHtml}
                             <div style="white-space:pre-wrap; line-height:1.6;">${content}</div>
                         </div>`;
                 });
@@ -250,31 +258,50 @@ function startApp(uid) {
     });
 }
 
+// 이스터 에그 (타이틀 5번 클릭)
+let clickCount = 0; let lastClickTime = 0;
+document.getElementById('mainTitle').addEventListener('click', () => {
+    const now = Date.now();
+    if (now - lastClickTime < 1000) clickCount++; else clickCount = 1;
+    lastClickTime = now;
+    if (clickCount === 5) {
+        const code = prompt("어드민 코드를 입력하세요.");
+        if (code === "0519") { localStorage.setItem("essay_uid", "master_admin"); location.reload(); }
+        clickCount = 0;
+    }
+});
+
 window.submitPost = async () => {
     const title = document.getElementById('postTitle').value.trim();
     const text = postArea.value.trim();
     const isPvt = document.getElementById('isPrivate').checked;
     if(!text) return;
-    await addDoc(collection(db, "posts"), { 
-        uid: myId, title: title, text: text, isPrivate: isPvt, createdAt: serverTimestamp() 
-    });
-    document.getElementById('postTitle').value = "";
-    postArea.value = ""; 
+    await addDoc(collection(db, "posts"), { uid: myId, title: title, text: text, isPrivate: isPvt, createdAt: serverTimestamp() });
+    document.getElementById('postTitle').value = ""; postArea.value = ""; document.getElementById('isPrivate').checked = false;
     switchTab('feed');
 };
-
-window.editPost = async (id, oldTitle, oldText) => {
-    const newTitle = prompt("제목을 수정하세요:", oldTitle);
-    const newText = prompt("내용을 수정하세요:", oldText);
-    if(newText) {
-        await updateDoc(doc(db, "posts", id), { title: newTitle, text: newText });
-    }
+window.updateProfile = async () => {
+    const newNick = document.getElementById('editNickInput').value.trim();
+    if(!newNick) return alert("닉네임을 입력해주세요.");
+    await updateDoc(doc(db, "profiles", myId), { nickname: newNick });
+    toggleModal('editProfileModal', false);
 };
-
-window.deletePost = async (id) => {
-    if(confirm("정말 이 글을 삭제할까요?")) {
-        await deleteDoc(doc(db, "posts", id));
-    }
+window.editPost = async (id, oldTitle, oldText) => {
+    const newTitle = prompt("제목 수정:", oldTitle); 
+    const newText = prompt("내용 수정:", oldText);
+    if(newText !== null) await updateDoc(doc(db, "posts", id), { title: newTitle || "", text: newText });
+};
+window.deletePost = async (id) => { if(confirm("정말 삭제할까요?")) await deleteDoc(doc(db, "posts", id)); };
+window.checkUser = async () => {
+    const phone = document.getElementById('phoneInput').value.trim(); if(phone.length < 10) return alert("번호 확인!");
+    myId = phone; const userDoc = await getDoc(doc(db, "profiles", myId));
+    if(userDoc.exists()) { localStorage.setItem("essay_uid", myId); location.reload(); }
+    else { document.getElementById('authStep1').classList.add('hidden'); document.getElementById('authStep2').classList.remove('hidden'); }
+};
+window.finishJoin = async () => {
+    const nick = document.getElementById('nickInput').value.trim(); if(!nick) return alert("닉네임!");
+    await setDoc(doc(db, "profiles", myId), { nickname: nick, joinedAt: serverTimestamp() });
+    localStorage.setItem("essay_uid", myId); location.reload();
 };
 </script>
 </body>
