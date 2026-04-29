@@ -4,10 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>에세이 클럽</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#111111">
 <style>
   :root { --main: #111; --bg: #FFFFFF; --card: #FFFFFF; --text: #111; --sub: #888; }
   body { margin: 0; background: var(--bg); font-family: -apple-system, "Malgun Gothic", sans-serif; color: var(--text); overflow: hidden; height: 100vh; position: fixed; width: 100%; }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  
   .app { max-width: 420px; margin: auto; background: var(--bg); height: 100vh; display: flex; flex-direction: column; border-left: 1px solid #EEE; border-right: 1px solid #EEE; position: relative; }
   .hidden { display: none !important; }
   
@@ -16,15 +19,15 @@
   .header h1 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.05em; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; }
   .profile-circle { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; color: white; font-weight: bold; cursor: pointer; background: var(--main); border: 2px solid var(--main); }
 
-  /* 하단 탭 고정 (중요!) */
+  /* 하단 탭 (고정) */
   .tab-nav { display: flex; background: white; border-top: 2px solid var(--main); padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); flex-shrink: 0; gap: 8px; position: absolute; bottom: 0; left: 0; right: 0; z-index: 1000; }
   .tab-btn { flex: 1; background: white; border: 1.5px solid var(--main); padding: 12px 0; font-size: 13px; color: var(--main); border-radius: 12px; font-weight: 600; transition: 0.2s; cursor: pointer; }
   .tab-btn.active { background: var(--main); color: white; box-shadow: 4px 4px 0px #DDD; }
 
-  /* 콘텐츠 영역: 하단 탭 높이만큼 여백 확보 */
-  .content { padding: 0 24px calc(80px + env(safe-area-inset-bottom)); flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  /* 콘텐츠 영역 (스크롤 처리) */
+  .content { padding: 0 24px calc(100px + env(safe-area-inset-bottom)); flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
-  /* 오늘 탭 스타일 */
+  /* 오늘 탭 레이아웃 */
   .welcome-section { display: flex; justify-content: space-between; align-items: center; padding: 40px 0 30px; border-bottom: 2px solid var(--main); margin-bottom: 35px; }
   .welcome-msg { font-size: 26px; font-weight: 400; line-height: 1.4; margin: 0; word-break: keep-all; letter-spacing: -0.04em; }
   .welcome-msg b { font-weight: 600; text-decoration: underline; text-underline-offset: 4px; }
@@ -41,12 +44,8 @@
   .badge.done { color: white; background: var(--main); }
   .badge.pending { color: var(--main); background: white; }
 
-  /* 피드 리스트 스타일 */
+  /* 피드/글쓰기 스타일 */
   .feed-item { border: 2px solid var(--main); border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 4px 4px 0px #EEE; }
-  .feed-header { display: flex; align-items: center; margin-bottom: 15px; gap: 10px; }
-  .feed-text { font-size: 15px; line-height: 1.6; white-space: pre-wrap; }
-
-  /* 입력창 및 모달 */
   textarea, input { width: 100%; border: 2px solid var(--main); border-radius: 16px; padding: 18px; font-size: 16px; margin-bottom: 15px; background: white; outline: none; }
   .btn-next { width: 100%; background: var(--main); color: white; border: none; padding: 20px; border-radius: 16px; font-size: 16px; font-weight: 800; cursor: pointer; }
   .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 2000; }
@@ -96,7 +95,7 @@
   <div class="content hidden" id="tab-member">
     <div style="padding-top:30px;">
         <h2 style="font-weight:800; margin-bottom:20px;">클럽 멤버</h2>
-        <div id="memberList"></div>
+        <div id="fullMemberList"></div>
     </div>
   </div>
 
@@ -121,6 +120,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot, query, orderBy, limit, doc, setDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
+// 규원님의 실제 Firebase 설정 복구
 const firebaseConfig = {
   apiKey: "AIzaSyBNtJ_BkroRRyq2d2dFLDb4gjumzRX85mk",
   authDomain: "essay-club.firebaseapp.com",
@@ -139,7 +139,17 @@ if(!myId) {
     localStorage.setItem("essay_uid", myId);
 }
 
+// 탭 전환 로직
+window.switchTab = (id) => {
+  document.querySelectorAll('.content').forEach(c => c.classList.add('hidden'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.remove('hidden');
+  document.getElementById('btn-'+id).classList.add('active');
+};
+
+// 1. 데이터 실시간 로드 및 렌더링
 function initData() {
+  // 프로필과 게시글 동시 모니터링
   onSnapshot(collection(db, "profiles"), (pSnap) => {
     let userMap = {};
     pSnap.forEach(d => { userMap[d.id] = d.data().nickname; });
@@ -161,49 +171,58 @@ function initData() {
         allPosts.push({ id: s.id, ...d });
       });
 
-      // 오늘 탭 리스트 렌더링
-      const listEl = document.getElementById('statusList');
-      listEl.innerHTML = "";
+      // [오늘] 탭 렌더링
+      const statusList = document.getElementById('statusList');
+      statusList.innerHTML = "";
+      // [멤버] 탭 렌더링
+      const fullList = document.getElementById('fullMemberList');
+      fullList.innerHTML = "";
+
       Object.keys(userMap).forEach(id => {
         if(id === "master_admin") return;
+        const name = userMap[id];
         const isDone = doneIds.has(id);
-        listEl.innerHTML += `<div class="status-item"><div class="mini-profile">${userMap[id][0]}</div><div class="status-info"><b>${userMap[id]}${id===myId?' (나)':''}</b><span class="badge ${isDone?'done':'pending'}">${isDone?'완료':'미완'}</span></div></div>`;
+        const itemHtml = `<div class="status-item"><div class="mini-profile">${name[0]}</div><div class="status-info"><b>${name}${id===myId?' (나)':''}</b><span class="badge ${isDone?'done':'pending'}">${isDone?'완료':'미완'}</span></div></div>`;
+        statusList.innerHTML += itemHtml;
+        fullList.innerHTML += itemHtml;
       });
 
-      // 피드 리스트 렌더링
+      // [피드] 탭 렌더링
       const feedEl = document.getElementById('feedList');
       feedEl.innerHTML = "";
       allPosts.sort((a,b) => b.createdAt - a.createdAt).forEach(p => {
           if(p.isPrivate && p.uid !== myId) return;
           const name = userMap[p.uid] || "멤버";
-          feedEl.innerHTML += `<div class="feed-item"><div class="feed-header"><div class="mini-profile">${name[0]}</div><b>${name}</b></div><div class="feed-text">${p.text}</div></div>`;
+          feedEl.innerHTML += `<div class="feed-item"><div style="display:flex; align-items:center; margin-bottom:10px;"><div class="mini-profile">${name[0]}</div><b>${name}</b></div><div style="white-space:pre-wrap; line-height:1.6;">${p.text}</div></div>`;
       });
     });
   });
 
+  // 글감 로드
   onSnapshot(query(collection(db, "keywords"), orderBy("date", "desc"), limit(1)), (snap) => {
     snap.forEach(d => document.getElementById('dispKeyword').textContent = d.data().text);
   });
 }
 
+// 2. 글 제출 기능
 window.submitPost = async () => {
   const t = document.getElementById('mainText').value.trim();
   if(!t) return alert("내용을 입력해주세요.");
-  await addDoc(collection(db, "posts"), { uid: myId, text: t, isPrivate: document.getElementById('isPvt').checked, createdAt: serverTimestamp() });
+  await addDoc(collection(db, "posts"), { 
+    uid: myId, text: t, isPrivate: document.getElementById('isPvt')?.checked || false, createdAt: serverTimestamp() 
+  });
   document.getElementById('mainText').value = "";
+  localStorage.removeItem("essay_draft");
   switchTab('feed');
 };
 
-window.switchTab = (id) => {
-  document.querySelectorAll('.content').forEach(c => c.classList.add('hidden'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-'+id).classList.remove('hidden');
-  document.getElementById('btn-'+id).classList.add('active');
-};
-
+// 3. 프로필 수정
 window.updateProfile = async () => {
   const n = document.getElementById('editNameInput').value.trim();
-  if(n) { await setDoc(doc(db, "profiles", myId), { nickname: n }, { merge: true }); toggleModal('profileModal', false); }
+  if(n) {
+    await setDoc(doc(db, "profiles", myId), { nickname: n }, { merge: true });
+    toggleModal('profileModal', false);
+  }
 };
 
 window.toggleModal = (id, show) => document.getElementById(id).classList.toggle('hidden', !show);
@@ -211,5 +230,13 @@ window.toggleModal = (id, show) => document.getElementById(id).classList.toggle(
 document.getElementById('todayDateLabel').textContent = new Date().toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
 initData();
 
+// 글자 수 세기 및 임시저장
 const textEl = document.getElementById('mainText');
-textEl.addEventListener('input', () => { document.getElementById('charCount').textContent = `${textEl.value.length} / 1,000자
+textEl.addEventListener('input', () => {
+  document.getElementById('charCount').textContent = `${textEl.value.length} / 1,000자 (공백 포함)`;
+  localStorage.setItem("essay_draft", textEl.value);
+});
+textEl.value = localStorage.getItem("essay_draft") || "";
+</script>
+</body>
+</html>
