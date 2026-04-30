@@ -30,9 +30,8 @@
   .welcome-msg { font-size: 24px; font-weight: 400; line-height: 1.4; margin: 0; }
   .welcome-msg b { font-weight: 700; text-decoration: none !important; }
 
-  /* 글감 배너 */
-  .keyword-banner { background: #f9f9f9; border: 2px solid var(--main); border-radius: 16px; padding: 15px; margin-bottom: 20px; font-size: 14px; line-height: 1.5; }
-  .keyword-card { border: 2.5px solid var(--main); border-radius: 24px; padding: 30px; margin-bottom: 35px; box-shadow: 8px 8px 0px var(--main); }
+  /* 글감 카드 */
+  .keyword-card { border: 2.5px solid var(--main); border-radius: 24px; padding: 30px; margin-bottom: 35px; box-shadow: 8px 8px 0px var(--main); position: relative; }
   
   /* 리스트 및 피드 */
   .status-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
@@ -46,50 +45,28 @@
   .feed-time { font-size: 11px; color: #999; font-weight: 600; }
   .feed-actions { display: flex; gap: 8px; font-size: 11px; }
   .action-btn { cursor: pointer; text-decoration: underline; color: #666; }
-  .empty-msg { text-align: center; padding: 60px 20px; color: #999; font-size: 15px; line-height: 1.6; }
 
   /* 네비게이션 */
   .tab-nav { 
-    display: flex; 
-    background: #FFF; 
-    border-top: 2px solid var(--main); 
+    display: flex; background: #FFF; border-top: 2px solid var(--main); 
     padding: 16px 16px calc(25px + env(safe-area-inset-bottom)); 
-    position: absolute; 
-    bottom: 0; 
-    width: 100%; 
-    gap: 10px; 
-    z-index: 1000; 
+    position: absolute; bottom: 0; width: 100%; gap: 10px; z-index: 1000; 
   }
   .tab-btn { flex: 1; border: 2px solid var(--main); padding: 14px 0; background: #FFF; border-radius: 12px; font-size: 13px; font-weight: bold; cursor: pointer; outline: none; transition: all 0.2s; }
   .tab-btn.active { background: var(--main); color: #FFF; }
 
-  /* 📍 글자 수 위치 및 쓰기 영역 레이아웃 수정 */
-  .write-container { display: flex; flex-direction: column; gap: 10px; }
-  .textarea-wrapper { position: relative; width: 100%; }
-  #charCount { 
-    text-align: right; 
-    font-size: 12px; 
-    color: #999; 
-    font-weight: 600; 
-    margin-bottom: 4px; /* 본문 박스 바로 위에 붙도록 */
-  }
+  /* 📍 마스터 관리 UI 스타일 */
+  .master-box { margin-top: 20px; padding: 20px; border: 2px solid #ff4d4d; border-radius: 24px; background: #FFF; text-align: left; }
+  .master-input-group { display: flex; gap: 8px; margin-bottom: 12px; }
+  .master-input { flex: 1; padding: 12px; border: 2px solid #EEE; border-radius: 12px; font-size: 14px; outline: none; }
+  .reserved-list { margin-top: 20px; border-top: 1px solid #EEE; padding-top: 15px; max-height: 250px; overflow-y: auto; }
+  .reserved-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f9f9f9; border-radius: 10px; margin-bottom: 6px; font-size: 13px; }
+  .mini-btn { padding: 4px 8px; font-size: 11px; border-radius: 6px; border: none; cursor: pointer; }
 
-  .private-label {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin: 15px 0 25px;
-    font-weight: 500;
-    font-size: 13.5px;
-    color: #666;
-    cursor: pointer;
-    user-select: none;
-  }
-  .private-label input[type="checkbox"] { width: 17px; height: 17px; margin: 0; cursor: pointer; }
-
+  /* 기타 공통 디자인 */
+  .private-label { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 15px 0 25px; font-weight: 500; font-size: 13.5px; color: #666; cursor: pointer; }
   .btn-next { width: 100%; padding: 20px; background: var(--main); color: #FFF; border: none; border-radius: 16px; font-size: 16px; font-weight: 800; cursor: pointer; }
-  .modal-overlay { position: fixed; inset: 0; background: #FFF; display: flex; align-items: center; justify-content: center; z-index: 2000; }
+  #charCount { text-align: right; font-size: 12px; color: #999; font-weight: 600; margin-bottom: 4px; }
   input, textarea { width: 100%; padding: 18px; border: 2px solid var(--main); border-radius: 16px; font-size: 16px; outline: none; }
 </style>
 </head>
@@ -102,6 +79,7 @@
       <div id="myCircle" class="mini-profile" onclick="toggleModal('editProfileModal', true)" style="cursor:pointer;">?</div>
     </div>
 
+    <!-- 오늘 탭 -->
     <div class="content" id="tab-today">
       <div class="welcome-section">
         <h2 class="welcome-msg" id="dynamicWelcome">연결 중...</h2>
@@ -110,42 +88,45 @@
       <div class="keyword-card">
         <small style="font-weight:800;">오늘의 글감</small>
         <h2 id="dispKeyword" style="margin:12px 0 0; font-size:24px; font-weight:800;">...</h2>
+        
+        <!-- 📍 마스터 전용 UI -->
+        <div id="adminPanel" class="master-box hidden">
+          <h4 style="margin:0 0 12px; font-size:15px; color:#ff4d4d;">🚨 마스터: 글감 예약 창고</h4>
+          <div class="master-input-group">
+            <input id="newKw" class="master-input" type="text" placeholder="글감 단어">
+            <input id="kwDate" class="master-input" type="date">
+          </div>
+          <button onclick="saveKeyword()" style="width:100%; padding:12px; background:#ff4d4d; color:#FFF; border:none; border-radius:12px; font-weight:800; cursor:pointer;">창고에 저장하기</button>
+          
+          <div id="reservedListUI" class="reserved-list"></div>
+        </div>
       </div>
       <div id="statusList" class="status-grid"></div>
     </div>
 
-    <!-- 📍 쓰기 탭 (글자 수 배치 수정) -->
+    <!-- 쓰기 탭 -->
     <div class="content hidden" id="tab-write">
-        <div class="write-container" style="padding-top:40px;">
-            <div class="keyword-banner"><b>💡 오늘의 글감:</b> <span id="writeTabKeyword">...</span></div>
-            <h2 style="font-weight:800; margin-bottom:0;">에세이 쓰기</h2>
-            
-            <input id="postTitle" type="text" placeholder="제목을 입력하세요 (선택)" style="font-weight: 700; margin: 0;">
-            
-            <div class="textarea-wrapper">
-                <div id="charCount">0 / 1,000자</div>
-                <textarea id="postText" style="height:250px; margin:0;" placeholder="글감에 대한 생각을 자유롭게 적어보세요."></textarea>
+        <div style="padding-top:40px;">
+            <div style="background:#f9f9f9; border:2px solid #111; border-radius:16px; padding:15px; margin-bottom:20px; font-size:14px;">
+              <b>💡 오늘의 글감:</b> <span id="writeTabKeyword">...</span>
             </div>
-            
-            <label class="private-label">
-                <input type="checkbox" id="isPrivate"> <span>비밀글로 업로드</span>
-            </label>
+            <h2 style="font-weight:800; margin-bottom:5px;">에세이 쓰기</h2>
+            <input id="postTitle" type="text" placeholder="제목을 입력하세요 (선택)" style="font-weight:700; margin:0;">
+            <div id="charCount">0 / 1,000자</div>
+            <textarea id="postText" style="height:250px;" placeholder="글감에 대한 생각을 자유롭게 적어보세요."></textarea>
+            <label class="private-label"><input type="checkbox" id="isPrivate"> <span>비밀글로 업로드</span></label>
             <button id="submitBtn" onclick="submitPost()" class="btn-next" style="opacity:0.3;" disabled>에세이 제출하기</button>
         </div>
     </div>
 
+    <!-- 피드 탭 -->
     <div class="content hidden" id="tab-feed">
-        <div style="padding-top:40px;">
-            <h2 style="font-weight:800; margin-bottom:20px;">모두의 피드</h2>
-            <div id="feedList"></div>
-        </div>
+        <div style="padding-top:40px;"><h2 style="font-weight:800; margin-bottom:20px;">모두의 피드</h2><div id="feedList"></div></div>
     </div>
 
+    <!-- 멤버 탭 -->
     <div class="content hidden" id="tab-member">
-        <div style="padding-top:40px;">
-            <h2 style="font-weight:800; margin-bottom:20px;">클럽 멤버</h2>
-            <div id="fullMemberList" class="status-grid"></div>
-        </div>
+        <div style="padding-top:40px;"><h2 style="font-weight:800; margin-bottom:20px;">클럽 멤버</h2><div id="fullMemberList" class="status-grid"></div></div>
     </div>
 
     <div class="tab-nav">
@@ -156,49 +137,28 @@
     </div>
   </div>
 
-  <!-- 모달 및 스크립트 로직 (기존과 동일) -->
-  <div id="authModal" class="modal-overlay hidden">
-    <div class="modal" style="padding:40px 24px; text-align:center; width:100%;">
-      <h2 style="font-size:28px; font-weight:800; margin-bottom:10px;">Essay Club</h2>
-      <div id="authStep1">
-        <input id="phoneInput" type="tel" placeholder="휴대폰 번호 (- 제외)">
-        <button onclick="checkUser()" class="btn-next" style="margin-top:10px;">시작하기</button>
-      </div>
-      <div id="authStep2" class="hidden">
-        <input id="nickInput" placeholder="닉네임 입력">
-        <button onclick="finishJoin()" class="btn-next" style="margin-top:10px;">클럽 입장</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="editProfileModal" class="modal-overlay hidden" style="background: rgba(0,0,0,0.5);">
-    <div class="modal" style="padding:30px 24px; background:#FFF; border:2px solid #111; border-radius:24px; width:85%; text-align:center;">
-      <h3 style="font-weight:800; margin-bottom:15px;">닉네임 수정</h3>
-      <input id="editNickInput" placeholder="새 닉네임 입력">
-      <button onclick="updateProfile()" class="btn-next" style="padding:15px;">저장하기</button>
-      <button onclick="toggleModal('editProfileModal', false)" style="background:none; border:none; margin-top:15px; color:#999; font-size:14px; cursor:pointer;">닫기</button>
-    </div>
-  </div>
+  <!-- 모달 모음 -->
+  <div id="authModal" class="modal-overlay hidden"><div class="modal" style="padding:40px 24px; text-align:center; width:100%;"><h2 style="font-size:28px; font-weight:800;">Essay Club</h2><div id="authStep1"><input id="phoneInput" type="tel" placeholder="휴대폰 번호"><button onclick="checkUser()" class="btn-next" style="margin-top:10px;">시작하기</button></div><div id="authStep2" class="hidden"><input id="nickInput" placeholder="닉네임 입력"><button onclick="finishJoin()" class="btn-next" style="margin-top:10px;">클럽 입장</button></div></div></div>
+  <div id="editProfileModal" class="modal-overlay hidden" style="background:rgba(0,0,0,0.5);"><div class="modal" style="padding:30px 24px; background:#FFF; border:2px solid #111; border-radius:24px; width:85%; text-align:center;"><h3 style="font-weight:800;">닉네임 수정</h3><input id="editNickInput"><button onclick="updateProfile()" class="btn-next">저장하기</button><button onclick="toggleModal('editProfileModal', false)" style="background:none; border:none; margin-top:15px; color:#999; cursor:pointer;">닫기</button></div></div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, query, orderBy, limit, doc, setDoc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, query, where, orderBy, limit, doc, setDoc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBNtJ_BkroRRyq2d2dFLDb4gjumzRX85mk",
-  authDomain: "essay-club.firebaseapp.com",
-  projectId: "essay-club",
-  storageBucket: "essay-club.firebasestorage.app",
-  messagingSenderId: "282430977646",
-  appId: "1:282430977646:web:8a1139948bb7f1b286587f"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const firebaseConfig = { apiKey: "AIzaSyBNtJ_BkroRRyq2d2dFLDb4gjumzRX85mk", authDomain: "essay-club.firebaseapp.com", projectId: "essay-club", storageBucket: "essay-club.firebasestorage.app", messagingSenderId: "282430977646", appId: "1:282430977646:web:8a1139948bb7f1b286587f" };
+const app = initializeApp(firebaseConfig); const db = getFirestore(app);
 let myId = localStorage.getItem("essay_uid");
 
-window.onload = () => { if(!myId) toggleModal('authModal', true); else startApp(myId); };
+// 📍 주말 감지 로직
+const dayOfWeek = new Date().getDay();
+const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+
+window.onload = () => { 
+    if(!myId) toggleModal('authModal', true); 
+    else startApp(myId); 
+    if(document.getElementById('kwDate')) document.getElementById('kwDate').value = new Date().toISOString().split('T')[0];
+};
 
 window.switchTab = (id) => {
     document.querySelectorAll('.content').forEach(c => c.classList.add('hidden'));
@@ -209,35 +169,42 @@ window.switchTab = (id) => {
 window.toggleModal = (id, show) => document.getElementById(id).classList.toggle('hidden', !show);
 
 const postArea = document.getElementById('postText');
-const submitBtn = document.getElementById('submitBtn');
 postArea.addEventListener('input', () => {
     const len = postArea.value.length;
     document.getElementById('charCount').textContent = `${len.toLocaleString()} / 1,000자`;
-    submitBtn.disabled = len === 0 || len > 1000;
-    submitBtn.style.opacity = submitBtn.disabled ? "0.3" : "1";
+    document.getElementById('submitBtn').disabled = len === 0 || len > 1000;
+    document.getElementById('submitBtn').style.opacity = len === 0 ? "0.3" : "1";
 });
 
 function startApp(uid) {
+    // 마스터 권한 확인[cite: 4]
+    if(uid === "master_admin") {
+        document.getElementById('adminPanel').classList.remove('hidden');
+        loadReservedKeywords();
+    }
+
     onSnapshot(collection(db, "profiles"), (pSnap) => {
         const userMap = {}; pSnap.forEach(d => userMap[d.id] = d.data().nickname);
         onSnapshot(collection(db, "posts"), (postSnap) => {
-            const today = new Date().toLocaleDateString();
+            const todayStr = new Date().toLocaleDateString();
             const doneIds = new Set(); const allPosts = [];
-            postSnap.forEach(s => {
-                const d = s.data(); if(d.createdAt && new Date(d.createdAt.toDate()).toLocaleDateString() === today) doneIds.add(d.uid);
-                allPosts.push({ id: s.id, ...d });
+            postSnap.forEach(s => { 
+                const d = s.data(); 
+                if(d.createdAt && new Date(d.createdAt.toDate()).toLocaleDateString() === todayStr) doneIds.add(d.uid);
+                allPosts.push({ id: s.id, ...d }); 
             });
 
             const myName = userMap[uid] || "멤버";
-            const isDone = doneIds.has(uid);
-            document.getElementById('dynamicWelcome').innerHTML = isDone 
-                ? `<b>${myName}</b>님의 생각이<br>차곡 쌓였어요` 
-                : `<b>${myName}</b>님, 오늘의 생각을<br>붙잡아 보세요!`;
-            document.getElementById('myCircle').textContent = myName[0];
-            document.getElementById('editNickInput').value = myName;
+            const welcomeEl = document.getElementById('dynamicWelcome');
 
-            const sList = document.getElementById('statusList'); 
-            const fList = document.getElementById('fullMemberList');
+            // 📍 주말 인사말 자동 전환[cite: 4]
+            if (isWeekend) {
+                welcomeEl.innerHTML = `<b>${myName}</b>님, 오늘은 클럽도<br>쉬는 날이에요. 푹 쉬세요!`;
+            } else {
+                welcomeEl.innerHTML = doneIds.has(uid) ? `<b>${myName}</b>님의 생각이<br>차곡 쌓였어요` : `<b>${myName}</b>님, 오늘의 생각을<br>붙잡아 보세요!`;
+            }
+
+            const sList = document.getElementById('statusList'); const fList = document.getElementById('fullMemberList');
             sList.innerHTML = ""; fList.innerHTML = "";
             Object.entries(userMap).forEach(([id, name]) => {
                 if(id === "master_admin") return;
@@ -247,89 +214,95 @@ function startApp(uid) {
             });
 
             const feedEl = document.getElementById('feedList');
-            if(allPosts.length === 0) {
-                feedEl.innerHTML = `<div class="empty-msg">아직 올라온 글이 없어요.<br>첫 글의 주인공이 되어보세요!</div>`;
-            } else {
-                feedEl.innerHTML = "";
-                allPosts.sort((a,b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0)).forEach(p => {
-                    const postName = userMap[p.uid] || "멤버";
-                    const isMyPost = p.uid === uid;
-                    const dateObj = p.createdAt?.toDate();
-                    const timeStr = dateObj ? `${(dateObj.getMonth()+1).toString().padStart(2,'0')}.${dateObj.getDate().toString().padStart(2,'0')} ${dateObj.getHours().toString().padStart(2,'0')}:${dateObj.getMinutes().toString().padStart(2,'0')}` : "";
-                    const content = (p.isPrivate && !isMyPost) ? `<span style="color:#999; font-style:italic;">비밀글입니다. 🔒</span>` : p.text;
-                    const titleHtml = p.title ? `<h3 style="margin:0 0 8px; font-size:18px; font-weight:800;">${p.title}</h3>` : "";
-                    
-                    feedEl.innerHTML += `
-                        <div class="feed-card">
-                            <div class="feed-header">
-                                <div style="display:flex; align-items:center; gap:8px;"><div class="mini-profile">${postName[0]}</div><b>${postName}</b>${p.isPrivate?' 🔒':''}</div>
-                                <div class="feed-info">
-                                    <span class="feed-time">${timeStr}</span>
-                                    ${isMyPost ? `<div class="feed-actions"><span class="action-btn" onclick="editPost('${p.id}', '${p.title||''}', \`${p.text.replace(/`/g, '\\`')}\`)">수정</span> <span class="action-btn" onclick="deletePost('${p.id}')">삭제</span></div>` : ''}
-                                </div>
-                            </div>
-                            ${titleHtml}
-                            <div style="white-space:pre-wrap; line-height:1.6;">${content}</div>
-                        </div>`;
-                });
-            }
+            feedEl.innerHTML = allPosts.length === 0 ? `<div class="empty-msg">아직 올라온 글이 없어요.</div>` : "";
+            allPosts.sort((a,b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0)).forEach(p => {
+                const postName = userMap[p.uid] || "멤버"; const isMy = p.uid === uid;
+                const dateObj = p.createdAt?.toDate(); 
+                const timeStr = dateObj ? `${(dateObj.getMonth()+1)}.${dateObj.getDate()} ${dateObj.getHours()}:${dateObj.getMinutes()}` : "";
+                feedEl.innerHTML += `<div class="feed-card"><div class="feed-header"><div style="display:flex; align-items:center; gap:8px;"><div class="mini-profile">${postName[0]}</div><b>${postName}</b>${p.isPrivate?' 🔒':''}</div><div class="feed-info"><span class="feed-time">${timeStr}</span>${isMy ? `<div class="feed-actions"><span class="action-btn" onclick="editPost('${p.id}', '${p.title||''}', \`${p.text.replace(/`/g, '\\`')}\`)">수정</span> <span class="action-btn" onclick="deletePost('${p.id}')">삭제</span></div>` : ''}</div></div>${p.title?`<h3>${p.title}</h3>`:""}<div style="white-space:pre-wrap;">${(p.isPrivate && !isMy) ? '비밀글입니다. 🔒' : p.text}</div></div>`;
+            });
         });
     });
 
-    onSnapshot(query(collection(db, "keywords"), orderBy("date", "desc"), limit(1)), (snap) => {
+    // 📍 글감 자동 배포 로직 (예약 창고 기반)[cite: 4]
+    const todayISO = new Date().toISOString().split('T')[0];
+    const q = query(collection(db, "keywords"), where("date", "<=", todayISO), orderBy("date", "desc"), limit(1));
+    onSnapshot(q, (snap) => {
+        const dispKw = document.getElementById('dispKeyword');
+        const writeKw = document.getElementById('writeTabKeyword');
+        if (isWeekend) {
+            dispKw.textContent = "주말은 쉽니다 🌿"; writeKw.textContent = "오늘은 쉬어가는 날입니다.";
+            document.getElementById('postText').disabled = true;
+        } else {
+            if(snap.empty) { dispKw.textContent = "글감을 기다려요"; }
+            else { snap.forEach(d => { dispKw.textContent = d.data().text; writeKw.textContent = d.data().text; }); }
+            document.getElementById('postText').disabled = false;
+        }
+    });
+}
+
+// 📍 마스터: 예약 목록 관리[cite: 4]
+function loadReservedKeywords() {
+    const listUI = document.getElementById('reservedListUI');
+    onSnapshot(query(collection(db, "keywords"), orderBy("date", "asc")), (snap) => {
+        listUI.innerHTML = snap.empty ? `<p style="font-size:12px; color:#999; text-align:center;">비어있는 창고</p>` : `<p style="font-size:11px; font-weight:700; margin-bottom:8px;">배송 대기 목록</p>`;
         snap.forEach(d => {
-            const kw = d.data().text;
-            document.getElementById('dispKeyword').textContent = kw;
-            document.getElementById('writeTabKeyword').textContent = kw;
+            const data = d.data();
+            listUI.innerHTML += `<div class="reserved-item"><div><b>${data.date}</b><br>${data.text}</div><div><button class="mini-btn" onclick="editKeyword('${d.id}', '${data.text}')">수정</button> <button class="mini-btn" style="color:red;" onclick="deleteKeyword('${d.id}')">삭제</button></div></div>`;
         });
     });
 }
 
-// 이스터 에그 (타이틀 5번 클릭)
-let clickCount = 0; let lastClickTime = 0;
-document.getElementById('mainTitle').addEventListener('click', () => {
-    const now = Date.now();
-    if (now - lastClickTime < 1000) clickCount++; else clickCount = 1;
-    lastClickTime = now;
-    if (clickCount === 5) {
-        const code = prompt("어드민 코드를 입력하세요.");
-        if (code === "0519") { localStorage.setItem("essay_uid", "master_admin"); location.reload(); }
-        clickCount = 0;
-    }
-});
+window.saveKeyword = async () => {
+    const text = document.getElementById('newKw').value.trim();
+    const date = document.getElementById('kwDate').value;
+    if(!text || !date) return alert("입력 확인!");
+    await addDoc(collection(db, "keywords"), { text, date });
+    alert("예약 완료!"); document.getElementById('newKw').value = "";
+};
+window.editKeyword = async (id, old) => {
+    const n = prompt("글감 수정:", old);
+    if(n) await updateDoc(doc(db, "keywords", id), { text: n });
+};
+window.deleteKeyword = async (id) => {
+    if(confirm("삭제할까요?")) await deleteDoc(doc(db, "keywords", id));
+};
 
+// 기본 기능 로직[cite: 4]
 window.submitPost = async () => {
     const title = document.getElementById('postTitle').value.trim();
     const text = postArea.value.trim();
     const isPvt = document.getElementById('isPrivate').checked;
-    if(!text) return;
-    await addDoc(collection(db, "posts"), { uid: myId, title: title, text: text, isPrivate: isPvt, createdAt: serverTimestamp() });
-    document.getElementById('postTitle').value = ""; postArea.value = ""; document.getElementById('isPrivate').checked = false;
-    switchTab('feed');
+    await addDoc(collection(db, "posts"), { uid: myId, title, text, isPrivate: isPvt, createdAt: serverTimestamp() });
+    document.getElementById('postTitle').value = ""; postArea.value = ""; switchTab('feed');
 };
-window.updateProfile = async () => {
-    const newNick = document.getElementById('editNickInput').value.trim();
-    if(!newNick) return alert("닉네임을 입력해주세요.");
-    await updateDoc(doc(db, "profiles", myId), { nickname: newNick });
-    toggleModal('editProfileModal', false);
+window.editPost = async (id, oldT, oldC) => {
+    const nC = prompt("내용 수정:", oldC);
+    if(nC) await updateDoc(doc(db, "posts", id), { text: nC });
 };
-window.editPost = async (id, oldTitle, oldText) => {
-    const newTitle = prompt("제목 수정:", oldTitle); 
-    const newText = prompt("내용 수정:", oldText);
-    if(newText !== null) await updateDoc(doc(db, "posts", id), { title: newTitle || "", text: newText });
-};
-window.deletePost = async (id) => { if(confirm("정말 삭제할까요?")) await deleteDoc(doc(db, "posts", id)); };
+window.deletePost = async (id) => { if(confirm("삭제?")) await deleteDoc(doc(db, "posts", id)); };
 window.checkUser = async () => {
-    const phone = document.getElementById('phoneInput').value.trim(); if(phone.length < 10) return alert("번호 확인!");
-    myId = phone; const userDoc = await getDoc(doc(db, "profiles", myId));
-    if(userDoc.exists()) { localStorage.setItem("essay_uid", myId); location.reload(); }
+    const p = document.getElementById('phoneInput').value; myId = p;
+    const d = await getDoc(doc(db, "profiles", p));
+    if(d.exists()) { localStorage.setItem("essay_uid", p); location.reload(); }
     else { document.getElementById('authStep1').classList.add('hidden'); document.getElementById('authStep2').classList.remove('hidden'); }
 };
 window.finishJoin = async () => {
-    const nick = document.getElementById('nickInput').value.trim(); if(!nick) return alert("닉네임!");
-    await setDoc(doc(db, "profiles", myId), { nickname: nick, joinedAt: serverTimestamp() });
+    const n = document.getElementById('nickInput').value;
+    await setDoc(doc(db, "profiles", myId), { nickname: n, joinedAt: serverTimestamp() });
     localStorage.setItem("essay_uid", myId); location.reload();
 };
+window.updateProfile = async () => {
+    const n = document.getElementById('editNickInput').value;
+    await updateDoc(doc(db, "profiles", myId), { nickname: n }); location.reload();
+};
+
+// 마스터 이스터에그[cite: 4]
+let cc = 0; let lt = 0;
+document.getElementById('mainTitle').addEventListener('click', () => {
+    const n = Date.now(); if(n-lt < 1000) cc++; else cc=1; lt=n;
+    if(cc===5) { const c = prompt("관리자 코드:"); if(c==="0519") { localStorage.setItem("essay_uid", "master_admin"); location.reload(); } }
+});
 </script>
 </body>
 </html>
