@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>에세이 클럽</title>
-
-<!-- 📍 아이폰 PWA(웹앱) 설정: 주소창 숨기기 및 아이콘 활성화 -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="에세이 클럽">
@@ -15,39 +13,35 @@
   :root { --main: #111; --bg: #FFF; --accent: #ff4d4d; }
   body { 
     margin: 0; background: var(--bg); font-family: -apple-system, sans-serif; color: var(--main); 
-    overflow: hidden; height: 100vh; position: fixed; width: 100%;
-    padding-top: env(safe-area-inset-top); /* 아이폰 노치 대응 */
+    height: 100svh; width: 100%; position: fixed; overflow: hidden;
   }
   * { box-sizing: border-box; }
-  .app { max-width: 420px; margin: auto; height: 100vh; display: flex; flex-direction: column; position: relative; border-left: 1px solid #EEE; border-right: 1px solid #EEE; }
-  .content { padding: 0 24px 120px; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .app { max-width: 420px; margin: auto; height: 100svh; display: flex; flex-direction: column; position: relative; background: var(--bg); }
+  .content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 24px 20px; }
   .hidden { display: none !important; }
 
-  /* 헤더/인사말 */
-  .header { padding: 10px 24px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+  .header { padding: 20px 24px 10px; display: flex; justify-content: space-between; align-items: center; }
   .header h1 { font-size: 20px; font-weight: 800; text-decoration: underline; cursor: pointer; margin: 0; }
-  .welcome-section { padding: 40px 0 20px; border-bottom: 2px solid var(--main); margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
-  .welcome-msg { font-size: 24px; font-weight: 400; line-height: 1.4; margin: 0; }
 
-  /* 글감 및 마스터 영역 */
-  .keyword-card { border: 2.5px solid var(--main); border-radius: 24px; padding: 30px; margin-bottom: 35px; box-shadow: 8px 8px 0px var(--main); position: relative; }
-  .master-box { margin-top: 20px; padding: 20px; border: 2px solid var(--accent); border-radius: 20px; background: #FFF; }
-  
-  /* 📍 2번 수정: 비밀글 체크박스 우측 하단 고정 */
-  .private-wrap { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin: 10px 0 20px; font-weight: 600; font-size: 13px; color: #666; cursor: pointer; }
-  .private-wrap input { width: 16px; height: 16px; margin: 0; }
+  .tab-nav { 
+    display: flex; background: #FFF; border-top: 2px solid var(--main); 
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); 
+    width: 100%; gap: 10px; z-index: 1000;
+  }
+  .tab-btn { flex: 1; border: 2px solid var(--main); padding: 14px 0; background: #FFF; border-radius: 12px; font-size: 13px; font-weight: bold; cursor: pointer; }
+  .tab-btn.active { background: var(--main); color: #FFF; }
 
-  /* 📍 3번 수정: 수정 전용 대형 모달 (전체화면) */
+  .private-wrap { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin: 15px 0; font-weight: 600; font-size: 13px; color: #666; cursor: pointer; }
+  .private-wrap input { width: 18px; height: 18px; margin: 0; cursor: pointer; }
+
   .modal-overlay { position: fixed; inset: 0; background: #FFF; display: flex; align-items: center; justify-content: center; z-index: 9999; }
   .edit-container { width: 100%; height: 100%; padding: 60px 24px; display: flex; flex-direction: column; }
   
   .btn-next { width: 100%; padding: 20px; background: var(--main); color: #FFF; border: none; border-radius: 16px; font-size: 16px; font-weight: 800; cursor: pointer; }
   input, textarea { width: 100%; padding: 18px; border: 2px solid var(--main); border-radius: 16px; font-size: 16px; outline: none; margin-bottom: 12px; }
-  .tab-nav { display: flex; background: #FFF; border-top: 2px solid var(--main); padding: 16px 16px calc(25px + env(safe-area-inset-bottom)); position: absolute; bottom: 0; width: 100%; gap: 10px; z-index: 1000; }
-  .tab-btn { flex: 1; border: 2px solid var(--main); padding: 14px 0; background: #FFF; border-radius: 12px; font-size: 13px; font-weight: bold; cursor: pointer; }
-  .tab-btn.active { background: var(--main); color: #FFF; }
   .mini-profile { width: 32px; height: 32px; border-radius: 50%; background: var(--main); color: #FFF; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; }
   .feed-card { border: 2px solid #111; border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; }
+  .keyword-tag { display: inline-block; background: #f0f0f0; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; margin-bottom: 12px; border: 1px solid #DDD; }
 </style>
 </head>
 <body>
@@ -60,35 +54,34 @@
     </div>
 
     <div class="content" id="tab-today">
-      <div class="welcome-section"><h2 class="welcome-msg" id="dynamicWelcome">연결 중...</h2><img src="mole.png" style="width:80px;" onerror="this.style.display='none'"></div>
-      <div class="keyword-card">
+      <div style="padding: 40px 0 20px; border-bottom: 2px solid #111; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
+        <!-- 📍 멘트 초기값: '반가워요'로 설정 -->
+        <h2 id="dynamicWelcome" style="font-size: 24px; font-weight: 400; line-height: 1.4; margin: 0;">규원 님, 반가워요!</h2>
+        <img src="mole.png" style="width:80px;" onerror="this.style.display='none'">
+      </div>
+      <div class="keyword-card" style="border:2.5px solid #111; border-radius:24px; padding:30px; margin-bottom:30px; box-shadow: 8px 8px 0px #111;">
         <small style="font-weight:800;">오늘의 글감</small>
         <h2 id="dispKeyword" style="margin:12px 0 0; font-size:24px; font-weight:800;">...</h2>
-        <div id="adminPanel" class="hidden master-box">
-            <h4 style="margin:0 0 10px; color:var(--accent);">🚨 마스터: 글감 창고</h4>
-            <input id="newKw" placeholder="글감 단어" style="padding:10px; font-size:14px;"><input id="kwDate" type="date" style="padding:10px; font-size:14px;">
-            <button onclick="saveKeyword()" style="width:100%; background:var(--accent); color:#FFF; border:none; padding:10px; border-radius:10px; font-weight:bold; cursor:pointer;">예약 저장</button>
+        <div id="adminPanel" class="hidden" style="margin-top:20px; padding:15px; border:2px solid #ff4d4d; border-radius:15px;">
+            <input id="newKw" placeholder="글감"><input id="kwDate" type="date">
+            <button onclick="saveKeyword()" style="width:100%; background:#ff4d4d; color:#FFF; border:none; padding:10px; border-radius:10px; font-weight:bold;">저장</button>
         </div>
       </div>
       <div id="statusList" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;"></div>
     </div>
 
     <div class="content hidden" id="tab-write">
-      <div style="padding-top:40px;">
+      <div style="padding-top:20px;">
         <div style="background:#f9f9f9; padding:15px; border-radius:15px; margin-bottom:20px;">💡 글감: <span id="writeTabKeyword">...</span></div>
         <input id="postTitle" type="text" placeholder="제목">
-        <textarea id="postText" style="height:300px;" placeholder="여기에 당신의 생각을 채워주세요."></textarea>
-        <!-- 📍 2번 해결: 비밀글 체크박스 위치 고정 -->
+        <textarea id="postText" style="height:300px;" placeholder="생각을 채워주세요."></textarea>
         <label class="private-wrap"><input type="checkbox" id="isPrivate"> <span>비밀글로 업로드</span></label>
         <button id="submitBtn" onclick="submitPost()" class="btn-next" style="opacity:0.3;" disabled>제출하기</button>
       </div>
     </div>
 
     <div class="content hidden" id="tab-feed">
-      <div style="padding-top:40px;">
-        <h2 style="font-weight:800;">모두의 피드</h2>
-        <div id="feedList"></div>
-      </div>
+      <div style="padding-top:20px;"><h2 style="font-weight:800;">피드</h2><div id="feedList"></div></div>
     </div>
 
     <div class="tab-nav">
@@ -98,18 +91,16 @@
     </div>
   </div>
 
-  <!-- 📍 3번 해결: 수정 전용 모달 -->
   <div id="editPostModal" class="modal-overlay hidden">
     <div class="edit-container">
-      <h2 style="font-weight:800; margin-bottom:20px;">에세이 수정</h2>
-      <input id="editPostTitle" type="text" placeholder="제목">
-      <textarea id="editPostText" style="flex:1;" placeholder="내용"></textarea>
+      <h2 style="font-weight:800;">에세이 수정</h2>
+      <input id="editPostTitle" type="text"><textarea id="editPostText" style="flex:1;"></textarea>
       <button onclick="saveEditPost()" class="btn-next">수정 완료</button>
-      <button onclick="toggleModal('editPostModal', false)" style="background:none; border:none; margin-top:15px; color:#999; cursor:pointer;">취소</button>
+      <button onclick="toggleModal('editPostModal', false)" style="background:none; border:none; margin-top:15px; color:#999;">취소</button>
     </div>
   </div>
 
-  <div id="authModal" class="modal-overlay hidden"><div style="text-align:center;"><h2>Essay Club</h2><div id="authStep1"><input id="phoneInput" type="tel" placeholder="번호 입력"><button onclick="checkUser()" class="btn-next">시작</button></div><div id="authStep2" class="hidden"><input id="nickInput" placeholder="닉네임 입력"><button onclick="finishJoin()" class="btn-next">입장</button></div></div></div>
+  <div id="authModal" class="modal-overlay hidden"><div style="text-align:center;"><h2>Essay Club</h2><input id="phoneInput" type="tel" placeholder="핸드폰 번호를 입력해 주세요"><button onclick="checkUser()" class="btn-next">시작</button></div></div>
 </div>
 
 <script type="module">
@@ -119,116 +110,126 @@ import { getFirestore, collection, onSnapshot, query, where, orderBy, limit, doc
 const firebaseConfig = { apiKey: "AIzaSyBNtJ_BkroRRyq2d2dFLDb4gjumzRX85mk", authDomain: "essay-club.firebaseapp.com", projectId: "essay-club", storageBucket: "essay-club.firebasestorage.app", messagingSenderId: "282430977646", appId: "1:282430977646:web:8a1139948bb7f1b286587f" };
 const app = initializeApp(firebaseConfig); const db = getFirestore(app);
 
-// 📍 1번 해결: 본인 계정으로 즉시 돌아가기 위한 가입 번호
-const MY_REAL_PHONE = "01012345678"; 
+const MY_REAL_PHONE = "01096395350"; 
 
 let myId = localStorage.getItem("essay_uid");
 let allPosts = []; let userMap = {}; let currentEditId = null;
 
+const dayOfWeek = new Date().getDay();
+const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+
 window.onload = () => { 
-    if(!myId) { toggleModal('authModal', true); } 
-    else { document.getElementById('mainUI').classList.remove('hidden'); startApp(myId); }
+  if(!myId) { toggleModal('authModal', true); } 
+  else { document.getElementById('mainUI').classList.remove('hidden'); startApp(myId); }
 };
 
 window.switchTab = (id) => {
-    document.querySelectorAll('.content').forEach(c => c.classList.add('hidden'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('tab-'+id).classList.remove('hidden');
-    document.getElementById('btn-'+id)?.classList.add('active');
+  document.querySelectorAll('.content').forEach(c => c.classList.add('hidden'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.remove('hidden');
+  document.getElementById('btn-'+id)?.classList.add('active');
 };
 window.toggleModal = (id, show) => document.getElementById(id).classList.toggle('hidden', !show);
 
 document.getElementById('postText')?.addEventListener('input', (e) => {
-    const len = e.target.value.length;
-    const btn = document.getElementById('submitBtn');
-    btn.disabled = len === 0; btn.style.opacity = len === 0 ? "0.3" : "1";
+  const len = e.target.value.length;
+  document.getElementById('submitBtn').disabled = len === 0;
+  document.getElementById('submitBtn').style.opacity = len === 0 ? "0.3" : "1";
 });
 
 function startApp(uid) {
-    if(uid === "master_admin") document.getElementById('adminPanel').classList.remove('hidden');
-    onSnapshot(collection(db, "profiles"), (pSnap) => {
-        userMap = {}; pSnap.forEach(d => userMap[d.id] = d.data().nickname);
-        // 📍 1번 해결: 닉네임 로딩 강화
-        const myName = userMap[uid] || "멤버";
-        document.getElementById('dynamicWelcome').innerHTML = `<b>${myName}</b>님, 반가워요!`;
-        document.getElementById('myCircle').textContent = myName[0];
-        
-        onSnapshot(collection(db, "posts"), (postSnap) => {
-            allPosts = []; const todayStr = new Date().toLocaleDateString(); const doneIds = new Set();
-            postSnap.forEach(s => { 
-                const d = s.data(); if(d.createdAt && new Date(d.createdAt.toDate()).toLocaleDateString() === todayStr) doneIds.add(d.uid);
-                allPosts.push({ id: s.id, ...d }); 
-            });
-            const sList = document.getElementById('statusList'); if(sList) sList.innerHTML = "";
-            Object.entries(userMap).forEach(([id, name]) => {
-                if(id === "master_admin") return;
-                const done = doneIds.has(id);
-                if(sList) sList.innerHTML += `<div style="border:2px solid #111; padding:15px; border-radius:20px; display:flex; align-items:center; gap:10px;"><b>${name}</b> <span style="font-size:10px; padding:2px 5px; border:1px solid #111; border-radius:5px;">${done?'완료':'미제출'}</span></div>`;
-            });
-            renderFeed();
-        });
-    });
+  if(uid === "master_admin") document.getElementById('adminPanel').classList.remove('hidden');
+  onSnapshot(collection(db, "profiles"), (pSnap) => {
+    userMap = {}; pSnap.forEach(d => userMap[d.id] = d.data().nickname);
+    
+    onSnapshot(collection(db, "posts"), (postSnap) => {
+      allPosts = []; const todayStr = new Date().toLocaleDateString(); const doneIds = new Set();
+      postSnap.forEach(s => { 
+        const d = s.data(); 
+        if(d.createdAt && new Date(d.createdAt.toDate()).toLocaleDateString() === todayStr) doneIds.add(d.uid);
+        allPosts.push({ id: s.id, ...d }); 
+      });
 
-    const todayISO = new Date().toISOString().split('T')[0];
-    onSnapshot(query(collection(db, "keywords"), where("date", "<=", todayISO), orderBy("date", "desc"), limit(1)), (snap) => {
-        snap.forEach(d => { 
-            document.getElementById('dispKeyword').textContent = d.data().text; 
-            document.getElementById('writeTabKeyword').textContent = d.data().text; 
-        });
+      const myName = userMap[uid] || "멤버";
+      const welcomeEl = document.getElementById('dynamicWelcome');
+      
+      // 멘트 동적 업데이트
+      if (isWeekend) {
+        welcomeEl.innerHTML = `<b>${myName}</b>님, 주말은 클럽도<br>쉬어갑니다. 푹 쉬세요!`;
+      } else if (doneIds.has(uid)) {
+        welcomeEl.innerHTML = `<b>${myName}</b>님의 생각이<br>차곡 쌓였어요`;
+      } else {
+        welcomeEl.innerHTML = `<b>${myName}</b>님, 오늘의 생각을<br>붙잡아 보세요!`;
+      }
+
+      document.getElementById('myCircle').textContent = myName[0];
+      const sList = document.getElementById('statusList'); if(sList) sList.innerHTML = "";
+      Object.entries(userMap).forEach(([id, name]) => {
+        if(id === "master_admin") return;
+        const done = doneIds.has(id);
+        if(sList) sList.innerHTML += `<div style="border:2px solid #111; padding:15px; border-radius:20px; display:flex; align-items:center; gap:10px;"><b>${name}</b> <span style="font-size:10px; padding:2px 5px; border:1px solid #111; border-radius:5px; background:${done?'#111':'#FFF'}; color:${done?'#FFF':'#111'};">${done?'완료':'미제출'}</span></div>`;
+      });
+      renderFeed();
     });
+  });
+
+  const todayISO = new Date().toISOString().split('T')[0];
+  onSnapshot(query(collection(db, "keywords"), where("date", "<=", todayISO), orderBy("date", "desc"), limit(1)), (snap) => {
+    snap.forEach(d => { 
+      document.getElementById('dispKeyword').textContent = d.data().text; 
+      document.getElementById('writeTabKeyword').textContent = d.data().text; 
+    });
+  });
 }
 
 window.renderFeed = () => {
-    const feedEl = document.getElementById('feedList'); if(!feedEl) return;
-    feedEl.innerHTML = "";
-    allPosts.sort((a,b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0)).forEach(p => {
-        const name = userMap[p.uid] || "멤버"; const isMy = p.uid === myId;
-        feedEl.innerHTML += `<div class="feed-card"><div class="keyword-tag" style="background:#eee; padding:2px 8px; border-radius:5px; font-size:11px; margin-bottom:10px; display:inline-block;"># ${p.keyword || '글감'}</div><div style="display:flex; justify-content:space-between;"><b>${name}</b> ${isMy ? `<span style="text-decoration:underline; cursor:pointer; font-size:12px;" onclick="openEditModal('${p.id}', '${p.title||''}', \`${p.text.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)">수정</span>` : ''}</div><h3>${p.title||''}</h3><p style="white-space:pre-wrap;">${(p.isPrivate && !isMy) ? '비밀글입니다. 🔒' : p.text}</p></div>`;
-    });
+  const feedEl = document.getElementById('feedList'); if(!feedEl) return;
+  feedEl.innerHTML = "";
+  allPosts.sort((a,b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0)).forEach(p => {
+    const name = userMap[p.uid] || "멤버"; const isMy = p.uid === myId;
+    feedEl.innerHTML += `<div class="feed-card"><div class="keyword-tag"># ${p.keyword || '글감'}</div><div style="display:flex; justify-content:space-between;"><b>${name}</b> ${isMy ? `<span style="text-decoration:underline; cursor:pointer; font-size:12px;" onclick="openEditModal('${p.id}', '${p.title||''}', \`${p.text.replace(/`/g, '\\`').replace(/\n/g, '\\n')}\`)">수정</span>` : ''}</div><h3>${p.title||''}</h3><p style="white-space:pre-wrap;">${(p.isPrivate && !isMy) ? '비밀글입니다. 🔒' : p.text}</p></div>`;
+  });
 };
 
 window.openEditModal = (id, title, text) => {
-    currentEditId = id; document.getElementById('editPostTitle').value = title; document.getElementById('editPostText').value = text;
-    toggleModal('editPostModal', true);
+  currentEditId = id; document.getElementById('editPostTitle').value = title; document.getElementById('editPostText').value = text;
+  toggleModal('editPostModal', true);
 };
 
 window.saveEditPost = async () => {
-    await updateDoc(doc(db, "posts", currentEditId), { title: document.getElementById('editPostTitle').value, text: document.getElementById('editPostText').value });
-    toggleModal('editPostModal', false); alert("수정 완료!");
+  await updateDoc(doc(db, "posts", currentEditId), { title: document.getElementById('editPostTitle').value, text: document.getElementById('editPostText').value });
+  toggleModal('editPostModal', false); alert("수정되었습니다.");
 };
 
 window.submitPost = async () => {
-    const kw = document.getElementById('writeTabKeyword').textContent;
-    await addDoc(collection(db, "posts"), { uid: myId, title: document.getElementById('postTitle').value, text: document.getElementById('postText').value, isPrivate: document.getElementById('isPrivate').checked, keyword: kw, createdAt: serverTimestamp() });
-    location.reload(); // 📍 제출 후 닉네임 인식 강화 새로고침
+  const kw = document.getElementById('writeTabKeyword').textContent;
+  await addDoc(collection(db, "posts"), { uid: myId, title: document.getElementById('postTitle').value, text: document.getElementById('postText').value, isPrivate: document.getElementById('isPrivate').checked, keyword: kw, createdAt: serverTimestamp() });
+  location.reload(); 
 };
 
 window.checkUser = async () => {
-    const p = document.getElementById('phoneInput').value; myId = p; 
-    const d = await getDoc(doc(db, "profiles", p));
-    if(d.exists()) { localStorage.setItem("essay_uid", p); location.reload(); }
-    else { document.getElementById('authStep1').classList.add('hidden'); document.getElementById('authStep2').classList.remove('hidden'); }
-};
-
-window.finishJoin = async () => {
-    await setDoc(doc(db, "profiles", myId), { nickname: document.getElementById('nickInput').value, joinedAt: serverTimestamp() });
-    localStorage.setItem("essay_uid", myId); location.reload();
+  const p = document.getElementById('phoneInput').value;
+  const d = await getDoc(doc(db, "profiles", p));
+  if(d.exists()) { localStorage.setItem("essay_uid", p); location.reload(); }
+  else { alert("미가입 번호입니다."); }
 };
 
 let cc = 0; let lt = 0;
 document.getElementById('mainTitle').addEventListener('click', () => {
-    const n = Date.now(); if(n-lt < 1000) cc++; else cc=1; lt=n;
-    if(cc===5) {
-        if(localStorage.getItem("essay_uid") === "master_admin") {
-            if(confirm("내 계정으로 돌아갈까요?")) { localStorage.setItem("essay_uid", MY_REAL_PHONE); location.reload(); }
-        } else {
-            if(prompt("코드:") === "0519") { localStorage.setItem("essay_uid", "master_admin"); location.reload(); }
-        }
+  const n = Date.now(); if(n-lt < 1000) cc++; else cc=1; lt=n;
+  if(cc===5) {
+    if(localStorage.getItem("essay_uid") === "master_admin") {
+      if(confirm("내 계정으로 돌아갈까요?")) { localStorage.setItem("essay_uid", MY_REAL_PHONE); location.reload(); }
+    } else {
+      if(prompt("코드:") === "0519") { localStorage.setItem("essay_uid", "master_admin"); location.reload(); }
     }
+    cc = 0;
+  }
 });
+
 window.saveKeyword = async () => {
-    await addDoc(collection(db, "keywords"), { text: document.getElementById('newKw').value, date: document.getElementById('kwDate').value });
-    alert("저장됨");
+  await addDoc(collection(db, "keywords"), { text: document.getElementById('newKw').value, date: document.getElementById('kwDate').value });
+  alert("저장됨");
 };
 </script>
 </body>
