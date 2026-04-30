@@ -11,8 +11,8 @@
 
 <style>
   :root { --main: #111; --bg: #FFF; --accent: #ff4d4d; }
-  body { 
-    margin: 0; background: var(--bg); font-family: -apple-system, sans-serif; color: var(--main); 
+  body {
+    margin: 0; background: var(--bg); font-family: -apple-system, sans-serif; color: var(--main);
     height: 100svh; width: 100%; position: fixed; overflow: hidden;
   }
   * { box-sizing: border-box; }
@@ -23,9 +23,9 @@
   .header { padding: 20px 24px 10px; display: flex; justify-content: space-between; align-items: center; }
   .header h1 { font-size: 20px; font-weight: 800; text-decoration: underline; cursor: pointer; margin: 0; }
 
-  .tab-nav { 
-    display: flex; background: #FFF; border-top: 2px solid var(--main); 
-    padding: 16px 16px calc(8px + env(safe-area-inset-bottom)); 
+  .tab-nav {
+    display: flex; background: #FFF; border-top: 2px solid var(--main);
+    padding: 16px 16px calc(8px + env(safe-area-inset-bottom));
     width: 100%; gap: 10px; z-index: 1000;
   }
   .tab-btn { flex: 1; border: 2px solid var(--main); padding: 14px 0; background: #FFF; border-radius: 12px; font-size: 13px; font-weight: bold; cursor: pointer; }
@@ -35,57 +35,61 @@
   .private-wrap input { width: 18px; height: 18px; margin: 0; cursor: pointer; }
 
   .modal-overlay { position: fixed; inset: 0; background: #FFF; display: flex; align-items: center; justify-content: center; z-index: 9999; }
-  .edit-container { width: 100%; height: 100%; padding: 60px 24px; display: flex; flex-direction: column; }
-  
+  .edit-container { width: 100%; height: 100%; padding: 60px 24px; display: flex; flex-direction: column; gap: 0; overflow-y: auto; }
+
   .btn-next { width: 100%; padding: 20px; background: var(--main); color: #FFF; border: none; border-radius: 16px; font-size: 16px; font-weight: 800; cursor: pointer; }
-  input, textarea { width: 100%; padding: 18px; border: 2px solid var(--main); border-radius: 16px; font-size: 16px; outline: none; margin-bottom: 12px; font-family: inherit; }
-  .mini-profile { width: 32px; height: 32px; border-radius: 50%; background: var(--main); color: #FFF; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; cursor: pointer; }
+  .btn-next:disabled { opacity: 0.5; cursor: not-allowed; }
+  input, textarea { width: 100%; padding: 18px; border: 2px solid var(--main); border-radius: 16px; font-size: 16px; outline: none; margin-bottom: 12px; font-family: inherit; background: #FFF; }
+  .mini-profile { width: 32px; height: 32px; border-radius: 50%; background: var(--main); color: #FFF; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; cursor: pointer; flex-shrink: 0; }
   .feed-card { border: 2px solid #111; border-radius: 20px; padding: 20px; margin-bottom: 15px; position: relative; }
   .keyword-tag { display: inline-block; background: #f0f0f0; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; margin-bottom: 12px; border: 1px solid #DDD; }
+  .already-submitted-banner { background: #f0f0f0; border: 2px solid #111; border-radius: 16px; padding: 20px; text-align: center; font-weight: 700; margin-top: 20px; }
 
-  /* [FIX #7] 제출 로딩 상태 */
-  .btn-next:disabled { opacity: 0.5; cursor: not-allowed; }
+  /* 인증 단계 UI */
+  .auth-box { padding: 24px; width: 100%; max-width: 340px; }
+  .auth-box h2 { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+  .auth-box p { font-size: 14px; color: #666; margin-bottom: 24px; }
+  .auth-back { background: none; border: none; font-size: 14px; color: #999; margin-top: 12px; cursor: pointer; text-decoration: underline; display: block; width: 100%; text-align: center; }
 
-  /* [FIX #4] 이미 제출한 경우 쓰기 탭 비활성 안내 */
-  .already-submitted-banner {
-    background: #f0f0f0; border: 2px solid #111; border-radius: 16px;
-    padding: 20px; text-align: center; font-weight: 700; margin-top: 20px;
-  }
+  /* 글감 관리 카드 */
+  .kw-manage-card { border: 1.5px solid #DDD; border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .kw-manage-card .kw-date { font-size: 11px; color: #999; margin-top: 2px; }
+  .kw-manage-btns { display: flex; gap: 8px; flex-shrink: 0; }
+  .kw-btn { border: 1.5px solid #111; background: #FFF; border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .kw-btn.del { border-color: var(--accent); color: var(--accent); }
+
+  #recaptcha-container { display: flex; justify-content: center; margin: 12px 0; }
 </style>
 </head>
 <body>
 
 <div class="app">
-  <!-- [FIX #6] hidden 클래스 + inline style 충돌 제거: 초기에 hidden만 사용 -->
+  <!-- 메인 UI -->
   <div id="mainUI" class="hidden" style="flex-direction:column; height:100%;">
     <div class="header">
       <h1 id="mainTitle">에세이 클럽</h1>
       <div id="myCircle" class="mini-profile">?</div>
     </div>
 
+    <!-- 오늘 탭 -->
     <div class="content" id="tab-today">
       <div style="padding: 40px 0 20px; border-bottom: 2px solid #111; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
         <h2 id="dynamicWelcome" style="font-size: 24px; font-weight: 400; line-height: 1.4; margin: 0;">반가워요!</h2>
         <img src="mole.png" style="width:80px;" onerror="this.style.display='none'">
       </div>
-      <div class="keyword-card" style="border:2.5px solid #111; border-radius:24px; padding:30px; margin-bottom:30px; box-shadow: 8px 8px 0px #111;">
+      <div style="border:2.5px solid #111; border-radius:24px; padding:30px; margin-bottom:30px; box-shadow: 8px 8px 0px #111;">
         <small style="font-weight:800;">오늘의 글감</small>
         <h2 id="dispKeyword" style="margin:12px 0 0; font-size:24px; font-weight:800;">...</h2>
-        <!-- [FIX #1] 어드민 패널은 서버사이드 인증 후 표시 (adminPanel 유지, JS에서 uid 검증) -->
-        <div id="adminPanel" class="hidden" style="margin-top:20px; padding:15px; border:2px solid #ff4d4d; border-radius:15px;">
-            <input id="newKw" placeholder="글감"><input id="kwDate" type="date">
-            <button id="saveKwBtn" style="width:100%; background:#ff4d4d; color:#FFF; border:none; padding:10px; border-radius:10px; font-weight:bold; cursor:pointer;">저장</button>
-        </div>
       </div>
       <div id="statusList" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;"></div>
     </div>
 
+    <!-- 쓰기 탭 -->
     <div class="content hidden" id="tab-write">
       <div style="padding-top:20px;">
         <div style="background:#f9f9f9; padding:15px; border-radius:15px; margin-bottom:20px;">
           💡 글감: <span id="writeTabKeyword">...</span>
         </div>
-        <!-- [FIX #4] 이미 제출한 경우 폼 숨김 처리 -->
         <div id="writeForm">
           <input id="postTitle" type="text" placeholder="제목">
           <textarea id="postText" style="height:300px;" placeholder="생각을 채워주세요."></textarea>
@@ -93,13 +97,18 @@
           <button id="submitBtn" class="btn-next" style="opacity:0.3;" disabled>제출하기</button>
         </div>
         <div id="alreadySubmitted" class="already-submitted-banner hidden">
-          ✅ 오늘의 글을 이미 제출했어요!<br><span style="font-weight:400; font-size:14px; margin-top:8px; display:block;">피드에서 확인해보세요.</span>
+          ✅ 오늘의 글을 이미 제출했어요!<br>
+          <span style="font-weight:400; font-size:14px; margin-top:8px; display:block;">피드에서 확인해보세요.</span>
         </div>
       </div>
     </div>
 
+    <!-- 피드 탭 -->
     <div class="content hidden" id="tab-feed">
-      <div style="padding-top:20px;"><h2 style="font-weight:800;">피드</h2><div id="feedList"></div></div>
+      <div style="padding-top:20px;">
+        <h2 style="font-weight:800;">피드</h2>
+        <div id="feedList"></div>
+      </div>
     </div>
 
     <div class="tab-nav">
@@ -109,29 +118,71 @@
     </div>
   </div>
 
+  <!-- 글 수정 모달 -->
   <div id="editPostModal" class="modal-overlay hidden">
     <div class="edit-container">
-      <h2 style="font-weight:800;">에세이 수정</h2>
-      <input id="editPostTitle" type="text">
-      <textarea id="editPostText" style="flex:1;"></textarea>
+      <h2 style="font-weight:800; margin-bottom:20px;">에세이 수정</h2>
+      <input id="editPostTitle" type="text" placeholder="제목">
+      <textarea id="editPostText" style="flex:1; min-height:200px;"></textarea>
       <button id="saveEditBtn" class="btn-next">수정 완료</button>
-      <button onclick="toggleModal('editPostModal', false)" style="background:none; border:none; margin-top:15px; color:#999; cursor:pointer;">취소</button>
+      <button onclick="toggleModal('editPostModal', false)" class="auth-back">취소</button>
     </div>
   </div>
 
+  <!-- 어드민: 글감 관리 모달 -->
+  <div id="adminModal" class="modal-overlay hidden">
+    <div class="edit-container">
+      <h2 style="font-weight:800; margin-bottom:4px;">글감 관리</h2>
+      <p style="color:#666; font-size:14px; margin-bottom:20px;">글감을 추가하거나 삭제할 수 있습니다.</p>
+
+      <!-- 추가 폼 -->
+      <div style="border:2px solid #111; border-radius:16px; padding:16px; margin-bottom:20px;">
+        <p style="font-weight:800; margin:0 0 12px;">새 글감 추가</p>
+        <input id="newKw" placeholder="글감 내용">
+        <input id="kwDate" type="date">
+        <button id="saveKwBtn" class="btn-next" style="padding:14px;">저장하기</button>
+      </div>
+
+      <!-- 기존 글감 목록 -->
+      <p style="font-weight:800; margin:0 0 12px;">등록된 글감</p>
+      <div id="kwList" style="overflow-y:auto; flex:1;"></div>
+
+      <button onclick="toggleModal('adminModal', false)" class="auth-back">닫기</button>
+    </div>
+  </div>
+
+  <!-- ── 인증 모달 ── -->
   <div id="authModal" class="modal-overlay">
-    <div style="text-align:center; padding: 24px;">
+    <!-- Step 1: 전화번호 입력 -->
+    <div id="authStep1" class="auth-box">
       <h2>Essay Club</h2>
-      <input id="phoneInput" type="tel" placeholder="핸드폰 번호를 입력해 주세요">
-      <button id="authBtn" class="btn-next">시작</button>
+      <p>가입된 핸드폰 번호로<br>인증 후 이용할 수 있습니다.</p>
+      <input id="phoneInput" type="tel" placeholder="01012345678 (숫자만)">
+      <!-- [FIX #1] reCAPTCHA 렌더링 위치 -->
+      <div id="recaptcha-container"></div>
+      <button id="sendOtpBtn" class="btn-next">인증번호 받기</button>
+    </div>
+
+    <!-- Step 2: OTP 입력 -->
+    <div id="authStep2" class="auth-box hidden">
+      <h2>인증번호 입력</h2>
+      <p id="otpDesc">번호로 전송된<br>6자리 코드를 입력하세요.</p>
+      <input id="otpInput" type="number" placeholder="000000" maxlength="6">
+      <button id="verifyOtpBtn" class="btn-next">확인</button>
+      <button id="backToStep1" class="auth-back">다시 번호 입력</button>
     </div>
   </div>
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot, query, where, orderBy, limit, doc, setDoc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+import { initializeApp }       from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import { getFirestore, collection, onSnapshot, query, where, orderBy, limit,
+         doc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
 
+// ── Firebase 초기화 ──────────────────────────────────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyBNtJ_BkroRRyq2d2dFLDb4gjumzRX85mk",
   authDomain: "essay-club.firebaseapp.com",
@@ -140,41 +191,44 @@ const firebaseConfig = {
   messagingSenderId: "282430977646",
   appId: "1:282430977646:web:8a1139948bb7f1b286587f"
 };
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const firebaseApp = initializeApp(firebaseConfig);
+const db   = getFirestore(firebaseApp);
+const auth = getAuth(firebaseApp);
 
-// [FIX #1,2] 어드민 코드 및 실제 전화번호를 소스에서 제거
-// 어드민 전환은 Firestore profiles에 isAdmin 필드로 관리
-let myId = localStorage.getItem("essay_uid");
-let allPosts = [];
-let userMap = {};
-let currentEditId = null;
-let myName = "멤버";
-let todaySubmitted = false;
-let postsUnsubscribe = null; // [FIX #10] 리스너 참조 저장
+// ── 상태 변수 ────────────────────────────────────────────────────────────────
+let myId            = null;   // Firebase Auth UID (전화번호 아님)
+let myPhone         = null;   // 인증된 전화번호 (+82 형식)
+let allPosts        = [];
+let allKeywords     = [];
+let userMap         = {};     // uid → nickname
+let myName          = "멤버";
+let todaySubmitted  = false;
+let currentEditId   = null;
+let confirmationResult = null;  // OTP 확인 객체
+let profilesUnsub   = null;
+let postsUnsub      = null;
+let keywordsUnsub   = null;
 
-// [FIX #8] 요일 판단을 함수로 분리해 항상 최신 시각 기준으로 계산
+// ── [FIX #3] 날짜: 로케일 독립적인 ISO 기준 ─────────────────────────────────
+function getTodayISO() {
+  return new Date().toISOString().split('T')[0]; // 항상 "YYYY-MM-DD"
+}
+function isSameDay(firestoreTs) {
+  if (!firestoreTs) return false;
+  return firestoreTs.toDate().toISOString().split('T')[0] === getTodayISO();
+}
+
+// ── 주말 판단 (항상 현재 시각 기준) ─────────────────────────────────────────
 function getIsWeekend() {
   const d = new Date().getDay();
   return d === 0 || d === 6;
 }
 
-// [FIX #3] XSS 방지용 이스케이프 함수
-function escHtml(str) {
-  if (!str) return "";
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#x27;");
-}
-
-// [FIX #3] DOM API를 사용한 안전한 요소 생성 헬퍼
+// ── XSS 방지 헬퍼 ───────────────────────────────────────────────────────────
 function el(tag, props = {}, children = []) {
   const node = document.createElement(tag);
   Object.entries(props).forEach(([k, v]) => {
-    if (k === "style") Object.assign(node.style, v);
+    if (k === "style")     Object.assign(node.style, v);
     else if (k === "className") node.className = v;
     else if (k === "textContent") node.textContent = v;
     else node.setAttribute(k, v);
@@ -186,84 +240,199 @@ function el(tag, props = {}, children = []) {
   return node;
 }
 
-window.onload = () => {
-  if (!myId) {
-    // authModal은 기본적으로 visible (hidden 클래스 없음)
-  } else {
-    document.getElementById('authModal').classList.add('hidden');
-    // [FIX #6] display:flex를 JS에서 명시적으로 설정
-    const mainUI = document.getElementById('mainUI');
-    mainUI.classList.remove('hidden');
-    mainUI.style.display = 'flex';
-    startApp(myId);
-  }
-};
-
+// ── 탭 / 모달 ────────────────────────────────────────────────────────────────
 window.switchTab = (id) => {
   document.querySelectorAll('.content').forEach(c => c.classList.add('hidden'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + id).classList.remove('hidden');
   document.getElementById('btn-' + id)?.classList.add('active');
 };
-
-window.toggleModal = (id, show) => {
+window.toggleModal = (id, show) =>
   document.getElementById(id).classList.toggle('hidden', !show);
-};
 
-// [FIX #3] textarea 입력은 value로 처리하므로 XSS 없음, 길이 검증만
-document.getElementById('postText')?.addEventListener('input', (e) => {
-  const len = e.target.value.trim().length;
-  const btn = document.getElementById('submitBtn');
-  btn.disabled = len === 0;
-  btn.style.opacity = len === 0 ? "0.3" : "1";
+// ── [FIX #1] Firebase Phone Auth ─────────────────────────────────────────────
+// Auth 상태 감지: 이미 로그인돼 있으면 바로 앱 시작
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    myId    = user.uid;
+    myPhone = user.phoneNumber; // "+821012345678" 형식
+
+    // 전화번호에서 한국 국가코드 제거 → 01012345678 형식으로 변환
+    const rawPhone = myPhone.replace('+82', '0');
+
+    // profiles 문서에 uid 자동 저장 (uid 필드가 없을 때만 1회 기록)
+    try {
+      const profileRef  = doc(db, 'profiles', rawPhone);
+      const profileSnap = await getDoc(profileRef);
+      if (profileSnap.exists() && !profileSnap.data().uid) {
+        await updateDoc(profileRef, { uid: myId });
+      }
+    } catch (e) {
+      console.warn('uid 저장 실패 (권한 문제일 수 있음):', e);
+    }
+
+    document.getElementById('authModal').classList.add('hidden');
+    const mainUI = document.getElementById('mainUI');
+    mainUI.classList.remove('hidden');
+    mainUI.style.display = 'flex';
+    startApp();
+  }
+  // user가 null이면 authModal이 이미 보이는 상태 → 아무 것도 안 해도 됨
 });
 
-function getTodayStr() {
-  return new Date().toLocaleDateString();
+// reCAPTCHA 초기화 (invisible)
+let recaptchaVerifier = null;
+function initRecaptcha() {
+  if (recaptchaVerifier) return;
+  recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+    size: 'invisible',
+    callback: () => {} // 자동 처리
+  });
 }
 
-function startApp(uid) {
-  // [FIX #1] 어드민 여부는 Firestore profiles의 isAdmin 필드로 확인
-  // [FIX #10] profiles와 posts 리스너를 분리해 중첩 방지
-  onSnapshot(collection(db, "profiles"), (pSnap) => {
+// Step 1: 인증번호 발송
+document.getElementById('sendOtpBtn').addEventListener('click', async () => {
+  const rawPhone = document.getElementById('phoneInput').value.trim().replace(/-/g, '');
+  if (!rawPhone || rawPhone.length < 10) {
+    alert("올바른 전화번호를 입력해주세요."); return;
+  }
+
+  // 한국 번호: 앞 0을 +82로 변환
+  const e164 = rawPhone.startsWith('0')
+    ? '+82' + rawPhone.slice(1)
+    : '+' + rawPhone;
+
+  // Firestore에 가입된 번호인지 먼저 확인
+  // profiles 컬렉션에 phone 필드로 저장되어 있다고 가정
+  // (기존에 전화번호가 doc ID였다면 아래 쿼리를 상황에 맞게 수정)
+  const profileSnap = await getDoc(doc(db, "profiles", rawPhone));
+  if (!profileSnap.exists()) {
+    alert("미가입 번호입니다."); return;
+  }
+
+  const btn = document.getElementById('sendOtpBtn');
+  btn.disabled = true; btn.textContent = "전송 중...";
+
+  try {
+    initRecaptcha();
+    confirmationResult = await signInWithPhoneNumber(auth, e164, recaptchaVerifier);
+    // Step 2로 전환
+    document.getElementById('authStep1').classList.add('hidden');
+    document.getElementById('authStep2').classList.remove('hidden');
+    document.getElementById('otpDesc').textContent =
+      `${e164} 번호로 전송된\n6자리 코드를 입력하세요.`;
+    document.getElementById('otpInput').focus();
+  } catch (err) {
+    console.error(err);
+    alert("인증번호 발송에 실패했습니다.\n잠시 후 다시 시도해주세요.");
+    // reCAPTCHA 리셋
+    recaptchaVerifier.clear();
+    recaptchaVerifier = null;
+  } finally {
+    btn.disabled = false; btn.textContent = "인증번호 받기";
+  }
+});
+
+// Step 2: OTP 확인
+document.getElementById('verifyOtpBtn').addEventListener('click', async () => {
+  const code = document.getElementById('otpInput').value.trim();
+  if (!code || code.length !== 6) { alert("6자리 코드를 입력해주세요."); return; }
+  const btn = document.getElementById('verifyOtpBtn');
+  btn.disabled = true; btn.textContent = "확인 중...";
+  try {
+    await confirmationResult.confirm(code);
+    // onAuthStateChanged가 자동으로 앱 시작을 처리함
+  } catch (err) {
+    console.error(err);
+    alert("인증번호가 올바르지 않습니다. 다시 확인해주세요.");
+    btn.disabled = false; btn.textContent = "확인";
+  }
+});
+
+// Step 2 → Step 1 뒤로가기
+document.getElementById('backToStep1').addEventListener('click', () => {
+  document.getElementById('authStep2').classList.add('hidden');
+  document.getElementById('authStep1').classList.remove('hidden');
+  document.getElementById('otpInput').value = '';
+  confirmationResult = null;
+  recaptchaVerifier?.clear();
+  recaptchaVerifier = null;
+});
+
+document.getElementById('phoneInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('sendOtpBtn').click();
+});
+document.getElementById('otpInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('verifyOtpBtn').click();
+});
+
+// ── 앱 시작 ──────────────────────────────────────────────────────────────────
+function startApp() {
+  // profiles 리스너 (독립)
+  if (profilesUnsub) profilesUnsub();
+  profilesUnsub = onSnapshot(collection(db, "profiles"), (pSnap) => {
     userMap = {};
     let isAdmin = false;
     pSnap.forEach(d => {
       userMap[d.id] = d.data().nickname;
-      if (d.id === uid && d.data().isAdmin) isAdmin = true;
+      // profiles doc ID가 rawPhone(01012345678)이고
+      // Auth UID와 매핑이 필요하면 phone 필드로 비교
+      if (d.data().uid === myId && d.data().isAdmin) isAdmin = true;
     });
-    if (isAdmin) document.getElementById('adminPanel').classList.remove('hidden');
-    myName = userMap[uid] || "멤버";
+    if (isAdmin) {
+      // 어드민: 헤더에 글감관리 버튼 노출
+      if (!document.getElementById('adminOpenBtn')) {
+        const btn = el('button', {
+          style: { background:'none', border:'1.5px solid #111', borderRadius:'8px',
+                   padding:'5px 10px', fontSize:'12px', fontWeight:'700', cursor:'pointer',
+                   marginRight:'8px' },
+          textContent: '글감관리'
+        });
+        btn.id = 'adminOpenBtn';
+        btn.addEventListener('click', () => {
+          renderKeywordList();
+          toggleModal('adminModal', true);
+        });
+        document.querySelector('.header').insertBefore(
+          btn, document.getElementById('myCircle')
+        );
+      }
+    }
+    myName = userMap[myId] || "멤버";
     document.getElementById('myCircle').textContent = myName[0];
     renderStatusAndWelcome();
     renderFeed();
   });
 
-  // [FIX #10] posts 리스너를 독립적으로 분리
-  if (postsUnsubscribe) postsUnsubscribe();
-  postsUnsubscribe = onSnapshot(collection(db, "posts"), (postSnap) => {
+  // posts 리스너 (독립)
+  if (postsUnsub) postsUnsub();
+  postsUnsub = onSnapshot(collection(db, "posts"), (postSnap) => {
     allPosts = [];
-    const todayStr = getTodayStr();
     const doneIds = new Set();
     postSnap.forEach(s => {
       const d = s.data();
-      if (d.createdAt && new Date(d.createdAt.toDate()).toLocaleDateString() === todayStr) {
-        doneIds.add(d.uid);
-      }
+      // [FIX #3] isSameDay로 로케일 독립적 비교
+      if (isSameDay(d.createdAt)) doneIds.add(d.uid);
       allPosts.push({ id: s.id, ...d });
     });
-    todaySubmitted = doneIds.has(uid);
-    // [FIX #4] 오늘 이미 제출했으면 쓰기 폼 숨기기
+    todaySubmitted = doneIds.has(myId);
     document.getElementById('writeForm').classList.toggle('hidden', todaySubmitted);
     document.getElementById('alreadySubmitted').classList.toggle('hidden', !todaySubmitted);
     renderStatusAndWelcome(doneIds);
     renderFeed();
   });
 
-  const todayISO = new Date().toISOString().split('T')[0];
-  onSnapshot(
-    query(collection(db, "keywords"), where("date", "<=", todayISO), orderBy("date", "desc"), limit(1)),
+  // keywords 리스너 (독립)
+  if (keywordsUnsub) keywordsUnsub();
+  keywordsUnsub = onSnapshot(
+    query(collection(db, "keywords"), where("date", "<=", getTodayISO()),
+          orderBy("date", "desc"), limit(1)),
     (snap) => {
+      if (snap.empty) {
+        document.getElementById('dispKeyword').textContent = "글감이 없습니다";
+        document.getElementById('writeTabKeyword').textContent = "글감 없음";
+        return;
+      }
       snap.forEach(d => {
         const text = d.data().text;
         document.getElementById('dispKeyword').textContent = text;
@@ -271,206 +440,212 @@ function startApp(uid) {
       });
     }
   );
+
+  // 전체 keywords (어드민 관리용)
+  onSnapshot(query(collection(db, "keywords"), orderBy("date", "desc")), (snap) => {
+    allKeywords = [];
+    snap.forEach(d => allKeywords.push({ id: d.id, ...d.data() }));
+  });
 }
 
+// ── 오늘 탭: 환영 + 상태 ────────────────────────────────────────────────────
 function renderStatusAndWelcome(doneIds = new Set()) {
-  // [FIX #8] 항상 최신 시각 기준으로 주말 판단
   const isWeekend = getIsWeekend();
   const welcomeEl = document.getElementById('dynamicWelcome');
-
-  // [FIX #3] innerHTML 대신 textContent로 안전하게 처리
-  welcomeEl.innerHTML = "";
-  const bold = el("b", { textContent: myName });
+  welcomeEl.innerHTML = '';
+  const bold = el('b', { textContent: myName });
   let rest;
-  if (isWeekend) {
-    rest = "님, 주말은 클럽도\n쉬어갑니다. 푹 쉬세요!";
-  } else if (doneIds.has(myId)) {
-    rest = "님의 생각이\n차곡 쌓였어요";
-  } else {
-    rest = "님, 오늘의 생각을\n붙잡아 보세요!";
-  }
+  if (isWeekend)            rest = '님, 주말은 클럽도\n쉬어갑니다. 푹 쉬세요!';
+  else if (doneIds.has(myId)) rest = '님의 생각이\n차곡 쌓였어요';
+  else                      rest = '님, 오늘의 생각을\n붙잡아 보세요!';
   welcomeEl.appendChild(bold);
   welcomeEl.appendChild(document.createTextNode(rest));
 
-  // [FIX #3] statusList DOM API로 안전하게 렌더링
   const sList = document.getElementById('statusList');
   if (!sList) return;
-  sList.innerHTML = "";
+  sList.innerHTML = '';
   Object.entries(userMap).forEach(([id, name]) => {
-    if (id === "master_admin") return;
+    if (id === 'master_admin') return;
     const done = doneIds.has(id);
-    const card = el("div", {
-      style: { border: "2px solid #111", padding: "15px", borderRadius: "20px", display: "flex", alignItems: "center", gap: "10px" }
-    });
-    const nameEl = el("b", { textContent: name });
-    const badge = el("span", {
-      style: {
-        fontSize: "10px", padding: "2px 5px", border: "1px solid #111",
-        borderRadius: "5px",
-        background: done ? "#111" : "#FFF",
-        color: done ? "#FFF" : "#111"
-      },
-      textContent: done ? "완료" : "미제출"
-    });
-    card.appendChild(nameEl);
-    card.appendChild(badge);
+    const card = el('div', { style: { border:'2px solid #111', padding:'15px', borderRadius:'20px', display:'flex', alignItems:'center', gap:'10px' } });
+    card.appendChild(el('b', { textContent: name }));
+    card.appendChild(el('span', {
+      style: { fontSize:'10px', padding:'2px 5px', border:'1px solid #111', borderRadius:'5px',
+               background: done ? '#111' : '#FFF', color: done ? '#FFF' : '#111' },
+      textContent: done ? '완료' : '미제출'
+    }));
     sList.appendChild(card);
   });
 }
 
-// [FIX #3] 피드 렌더링 전체를 DOM API로 교체 (innerHTML 제거)
+// ── 피드 렌더링 ──────────────────────────────────────────────────────────────
 window.renderFeed = () => {
   const feedEl = document.getElementById('feedList');
   if (!feedEl) return;
-  feedEl.innerHTML = "";
+  feedEl.innerHTML = '';
 
-  // [FIX #11] 최신 30개만 렌더링 (간단한 페이지네이션)
-  const sorted = [...allPosts].sort((a, b) =>
-    (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0)
-  ).slice(0, 30);
+  const sorted = [...allPosts]
+    .sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0))
+    .slice(0, 30);
 
   sorted.forEach(p => {
-    const name = userMap[p.uid] || "멤버";
-    const isMy = p.uid === myId;
+    const name      = userMap[p.uid] || '멤버';
+    const isMy      = p.uid === myId;
     const isPrivate = p.isPrivate && !isMy;
 
-    const card = el("div", { className: "feed-card" });
+    const card = el('div', { className: 'feed-card' });
+    card.appendChild(el('div', { className: 'keyword-tag', textContent: `# ${p.keyword || '글감'}` }));
 
-    // keyword tag
-    const tag = el("div", { className: "keyword-tag", textContent: `# ${p.keyword || "글감"}` });
-    card.appendChild(tag);
-
-    // header row: name + edit button
-    const headerRow = el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" } });
-    headerRow.appendChild(el("b", { textContent: name }));
-
+    const headerRow = el('div', { style: { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'4px' } });
+    headerRow.appendChild(el('b', { textContent: name }));
     if (isMy) {
-      // [FIX #3] onclick 인라인 속성 제거 → addEventListener로 이벤트 등록
-      const editBtn = el("span", {
-        style: { textDecoration: "underline", cursor: "pointer", fontSize: "12px" },
-        textContent: "수정"
-      });
-      editBtn.addEventListener("click", () => openEditModal(p.id, p.title || "", p.text));
+      const editBtn = el('span', { style: { textDecoration:'underline', cursor:'pointer', fontSize:'12px' }, textContent: '수정' });
+      editBtn.addEventListener('click', () => openEditModal(p.id, p.title || '', p.text));
       headerRow.appendChild(editBtn);
     }
     card.appendChild(headerRow);
-
-    // title
-    if (p.title) {
-      card.appendChild(el("h3", { textContent: p.title, style: { margin: "8px 0" } }));
-    }
-
-    // body
-    const body = el("p", {
-      style: { whiteSpace: "pre-wrap", margin: "0", color: isPrivate ? "#999" : "#111" },
-      textContent: isPrivate ? "비밀글입니다. 🔒" : p.text
-    });
-    card.appendChild(body);
-
+    if (p.title) card.appendChild(el('h3', { textContent: p.title, style: { margin:'8px 0' } }));
+    card.appendChild(el('p', {
+      style: { whiteSpace:'pre-wrap', margin:'0', color: isPrivate ? '#999' : '#111' },
+      textContent: isPrivate ? '비밀글입니다. 🔒' : p.text
+    }));
     feedEl.appendChild(card);
   });
 
   if (sorted.length === 30 && allPosts.length > 30) {
-    const more = el("div", {
-      style: { textAlign: "center", padding: "16px", color: "#999", fontSize: "13px" },
+    feedEl.appendChild(el('div', {
+      style: { textAlign:'center', padding:'16px', color:'#999', fontSize:'13px' },
       textContent: `최근 30개만 표시됩니다. (전체 ${allPosts.length}개)`
-    });
-    feedEl.appendChild(more);
+    }));
   }
 };
 
-// [FIX #3] 수정 모달: 이벤트 인라인 속성 제거 → addEventListener
+// ── 글 수정 모달 ─────────────────────────────────────────────────────────────
 function openEditModal(id, title, text) {
   currentEditId = id;
   document.getElementById('editPostTitle').value = title;
-  document.getElementById('editPostText').value = text;
+  document.getElementById('editPostText').value  = text;
   toggleModal('editPostModal', true);
 }
 
 document.getElementById('saveEditBtn').addEventListener('click', async () => {
   const btn = document.getElementById('saveEditBtn');
-  btn.disabled = true;
-  btn.textContent = "수정 중...";
+  btn.disabled = true; btn.textContent = '수정 중...';
   try {
-    await updateDoc(doc(db, "posts", currentEditId), {
+    await updateDoc(doc(db, 'posts', currentEditId), {
       title: document.getElementById('editPostTitle').value,
-      text: document.getElementById('editPostText').value
+      text:  document.getElementById('editPostText').value
     });
     toggleModal('editPostModal', false);
-    alert("수정되었습니다.");
-  } catch (e) {
-    alert("수정에 실패했습니다. 다시 시도해주세요.");
+    alert('수정되었습니다.');
+  } catch {
+    alert('수정에 실패했습니다. 다시 시도해주세요.');
   } finally {
-    btn.disabled = false;
-    btn.textContent = "수정 완료";
+    btn.disabled = false; btn.textContent = '수정 완료';
   }
 });
 
-// [FIX #4,7] 중복 제출 방지 + 로딩 상태 처리
-document.getElementById('submitBtn').addEventListener('click', async () => {
-  if (todaySubmitted) {
-    alert("오늘은 이미 제출하셨습니다!");
-    return;
-  }
+// ── 글 제출 ──────────────────────────────────────────────────────────────────
+document.getElementById('postText')?.addEventListener('input', e => {
+  const len = e.target.value.trim().length;
   const btn = document.getElementById('submitBtn');
-  btn.disabled = true;
-  btn.textContent = "제출 중...";
-  const kw = document.getElementById('writeTabKeyword').textContent;
+  btn.disabled = len === 0;
+  btn.style.opacity = len === 0 ? '0.3' : '1';
+});
+
+document.getElementById('submitBtn').addEventListener('click', async () => {
+  if (todaySubmitted) { alert('오늘은 이미 제출하셨습니다!'); return; }
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = '제출 중...';
   try {
-    await addDoc(collection(db, "posts"), {
-      uid: myId,
-      title: document.getElementById('postTitle').value,
-      text: document.getElementById('postText').value,
+    await addDoc(collection(db, 'posts'), {
+      uid:       myId,
+      title:     document.getElementById('postTitle').value,
+      text:      document.getElementById('postText').value,
       isPrivate: document.getElementById('isPrivate').checked,
-      keyword: kw,
+      keyword:   document.getElementById('writeTabKeyword').textContent,
       createdAt: serverTimestamp()
     });
-    // [FIX #7] reload 대신 UI만 업데이트
     todaySubmitted = true;
     document.getElementById('writeForm').classList.add('hidden');
     document.getElementById('alreadySubmitted').classList.remove('hidden');
     switchTab('feed');
-  } catch (e) {
-    alert("제출에 실패했습니다. 다시 시도해주세요.");
-    btn.disabled = false;
-    btn.textContent = "제출하기";
+  } catch {
+    alert('제출에 실패했습니다. 다시 시도해주세요.');
+    btn.disabled = false; btn.textContent = '제출하기';
   }
 });
 
-// 인증
-document.getElementById('authBtn').addEventListener('click', async () => {
-  const p = document.getElementById('phoneInput').value.trim();
-  if (!p) return;
-  const d = await getDoc(doc(db, "profiles", p));
-  if (d.exists()) {
-    localStorage.setItem("essay_uid", p);
-    location.reload();
-  } else {
-    alert("미가입 번호입니다.");
+// ── [FIX #2] 글감 관리 (어드민) ─────────────────────────────────────────────
+function renderKeywordList() {
+  const listEl = document.getElementById('kwList');
+  listEl.innerHTML = '';
+
+  if (allKeywords.length === 0) {
+    listEl.appendChild(el('p', { style: { color:'#999', fontSize:'14px' }, textContent: '등록된 글감이 없습니다.' }));
+    return;
   }
-});
-document.getElementById('phoneInput').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') document.getElementById('authBtn').click();
-});
 
-// 프로필 아이콘
-document.getElementById('myCircle').addEventListener('click', () => {
-  // 필요 시 프로필 편집 모달 연결
-});
+  allKeywords.forEach(kw => {
+    const card = el('div', { className: 'kw-manage-card' });
 
-// [FIX #1,2] 어드민 전환: 코드를 소스에서 제거 → isAdmin 필드로만 관리
-// 타이틀 5번 탭 기능 제거 (보안상 클라이언트 어드민 전환 불필요)
-// 어드민은 Firebase Console에서 직접 isAdmin: true 필드 추가로 관리
+    const info = el('div');
+    info.appendChild(el('div', { style: { fontWeight:'700', fontSize:'15px' }, textContent: kw.text }));
+    info.appendChild(el('div', { className: 'kw-date', textContent: kw.date }));
+    card.appendChild(info);
 
-// 글감 저장 (어드민 전용)
+    const btns = el('div', { className: 'kw-manage-btns' });
+
+    // 수정 버튼
+    const editBtn = el('button', { className: 'kw-btn', textContent: '수정' });
+    editBtn.addEventListener('click', () => {
+      const newText = prompt('글감 수정:', kw.text);
+      if (!newText || newText.trim() === '') return;
+      const newDate = prompt('날짜 수정 (YYYY-MM-DD):', kw.date);
+      if (!newDate) return;
+      updateDoc(doc(db, 'keywords', kw.id), { text: newText.trim(), date: newDate.trim() })
+        .then(() => { alert('수정되었습니다.'); renderKeywordList(); })
+        .catch(() => alert('수정 실패. 다시 시도해주세요.'));
+    });
+
+    // 삭제 버튼
+    const delBtn = el('button', { className: 'kw-btn del', textContent: '삭제' });
+    delBtn.addEventListener('click', async () => {
+      if (!confirm(`"${kw.text}" 글감을 삭제할까요?`)) return;
+      try {
+        await deleteDoc(doc(db, 'keywords', kw.id));
+        alert('삭제되었습니다.');
+        renderKeywordList();
+      } catch {
+        alert('삭제 실패. 다시 시도해주세요.');
+      }
+    });
+
+    btns.appendChild(editBtn);
+    btns.appendChild(delBtn);
+    card.appendChild(btns);
+    listEl.appendChild(card);
+  });
+}
+
+// 글감 추가
 document.getElementById('saveKwBtn').addEventListener('click', async () => {
   const text = document.getElementById('newKw').value.trim();
   const date = document.getElementById('kwDate').value;
-  if (!text || !date) { alert("글감과 날짜를 입력해주세요."); return; }
-  await addDoc(collection(db, "keywords"), { text, date });
-  alert("저장됨");
-  document.getElementById('newKw').value = "";
-  document.getElementById('kwDate').value = "";
+  if (!text || !date) { alert('글감과 날짜를 모두 입력해주세요.'); return; }
+  const btn = document.getElementById('saveKwBtn');
+  btn.disabled = true; btn.textContent = '저장 중...';
+  try {
+    await addDoc(collection(db, 'keywords'), { text, date });
+    document.getElementById('newKw').value  = '';
+    document.getElementById('kwDate').value = '';
+    alert('저장되었습니다.');
+    renderKeywordList();
+  } catch {
+    alert('저장 실패. 다시 시도해주세요.');
+  } finally {
+    btn.disabled = false; btn.textContent = '저장하기';
+  }
 });
 </script>
 </body>
