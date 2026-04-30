@@ -204,6 +204,7 @@ let userMap         = {};     // uid → nickname
 let myName          = "멤버";
 let todaySubmitted  = false;
 let currentEditId   = null;
+let amIAdmin        = false;
 let confirmationResult = null;  // OTP 확인 객체
 let profilesUnsub   = null;
 let postsUnsub      = null;
@@ -380,6 +381,7 @@ function startApp() {
       userMap[key] = data.nickname;
       if (data.uid === myId && data.isAdmin) isAdmin = true;
     });
+    amIAdmin = isAdmin;
     if (isAdmin) {
       // 어드민: 헤더에 글감관리 버튼 노출
       if (!document.getElementById('adminOpenBtn')) {
@@ -499,11 +501,23 @@ window.renderFeed = () => {
 
     const headerRow = el('div', { style: { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'4px' } });
     headerRow.appendChild(el('b', { textContent: name }));
+    const btnWrap = el('div', { style: { display:'flex', gap:'10px' } });
     if (isMy) {
       const editBtn = el('span', { style: { textDecoration:'underline', cursor:'pointer', fontSize:'12px' }, textContent: '수정' });
       editBtn.addEventListener('click', () => openEditModal(p.id, p.title || '', p.text));
-      headerRow.appendChild(editBtn);
+      btnWrap.appendChild(editBtn);
     }
+    if (amIAdmin) {
+      const delBtn = el('span', { style: { textDecoration:'underline', cursor:'pointer', fontSize:'12px', color:'#ff4d4d' }, textContent: '삭제' });
+      delBtn.addEventListener('click', async () => {
+        if (!confirm('이 글을 삭제할까요?')) return;
+        try {
+          await deleteDoc(doc(db, 'posts', p.id));
+        } catch { alert('삭제에 실패했습니다.'); }
+      });
+      btnWrap.appendChild(delBtn);
+    }
+    headerRow.appendChild(btnWrap);
     card.appendChild(headerRow);
     if (p.title) card.appendChild(el('h3', { textContent: p.title, style: { margin:'8px 0' } }));
     card.appendChild(el('p', {
