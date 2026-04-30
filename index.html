@@ -374,10 +374,11 @@ function startApp() {
     userMap = {};
     let isAdmin = false;
     pSnap.forEach(d => {
-      userMap[d.id] = d.data().nickname;
-      // profiles doc ID가 rawPhone(01012345678)이고
-      // Auth UID와 매핑이 필요하면 phone 필드로 비교
-      if (d.data().uid === myId && d.data().isAdmin) isAdmin = true;
+      const data = d.data();
+      // uid 필드가 있으면 uid 기준으로, 없으면 doc ID(전화번호) fallback
+      const key = data.uid || d.id;
+      userMap[key] = data.nickname;
+      if (data.uid === myId && data.isAdmin) isAdmin = true;
     });
     if (isAdmin) {
       // 어드민: 헤더에 글감관리 버튼 노출
