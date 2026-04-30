@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>에세이 클럽</title>
 
+<!-- PWA/아이콘 설정 -->
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
@@ -48,31 +49,39 @@
   .action-btn { cursor: pointer; text-decoration: underline; color: #666; }
   .empty-msg { text-align: center; padding: 60px 20px; color: #999; font-size: 15px; line-height: 1.6; }
 
-/* 📍 하단 네비게이션 여백 대폭 강화 */
+  /* 하단 네비게이션 여백 최적화 */
   .tab-nav { 
     display: flex; 
     background: #FFF; 
     border-top: 2px solid var(--main); 
-    /* 하단 패딩을 25px + 안전 영역으로 대폭 늘려 막대기와 거리를 둡니다 */
     padding: 16px 16px calc(25px + env(safe-area-inset-bottom)); 
     position: absolute; 
     bottom: 0; 
     width: 100%; 
-    gap: 10px; /* 버튼 사이 간격을 조금 더 넓힘 */
+    gap: 10px; 
     z-index: 1000; 
   }
-  
-  .tab-btn { 
-    flex: 1; 
-    border: 2px solid var(--main); 
-    padding: 14px 0; /* 세로 길이를 살짝 늘려 터치감을 개선 */
-    background: #FFF; 
-    border-radius: 12px; 
-    font-size: 13px; 
-    font-weight: bold; 
-    cursor: pointer; 
-    outline: none; 
-    transition: all 0.2s; /* 클릭 시 부드러운 반응 */
+  .tab-btn { flex: 1; border: 2px solid var(--main); padding: 14px 0; background: #FFF; border-radius: 12px; font-size: 13px; font-weight: bold; cursor: pointer; outline: none; transition: all 0.2s; }
+  .tab-btn.active { background: var(--main); color: #FFF; }
+
+  /* 📍 체크박스 정렬 및 문구 디자인 수정 */
+  .private-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 15px 0 25px;
+    font-weight: 500;
+    font-size: 13.5px;
+    color: #666;
+    cursor: pointer;
+    user-select: none;
+  }
+  .private-label input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    margin: 0;
+    cursor: pointer;
   }
 
   .btn-next { width: 100%; padding: 20px; background: var(--main); color: #FFF; border: none; border-radius: 16px; font-size: 16px; font-weight: 800; cursor: pointer; }
@@ -89,6 +98,7 @@
       <div id="myCircle" class="mini-profile" onclick="toggleModal('editProfileModal', true)" style="cursor:pointer;">?</div>
     </div>
 
+    <!-- 오늘 탭 -->
     <div class="content" id="tab-today">
       <div class="welcome-section">
         <h2 class="welcome-msg" id="dynamicWelcome">연결 중...</h2>
@@ -101,6 +111,7 @@
       <div id="statusList" class="status-grid"></div>
     </div>
 
+    <!-- 쓰기 탭 (문구 및 디자인 수정 완료) -->
     <div class="content hidden" id="tab-write">
         <div style="padding-top:40px;">
             <div class="keyword-banner"><b>💡 오늘의 글감:</b> <span id="writeTabKeyword">...</span></div>
@@ -108,13 +119,17 @@
             <input id="postTitle" type="text" placeholder="제목을 입력하세요 (선택)" style="padding: 12px 18px; font-weight: 700;">
             <div id="charCount" style="font-size:12px; color:#999; margin-bottom:10px; font-weight:600;">0 / 1,000자</div>
             <textarea id="postText" style="height:250px;" placeholder="글감에 대한 생각을 자유롭게 적어보세요."></textarea>
-            <label style="display:flex; align-items:center; gap:8px; margin-bottom:20px; font-weight:600; font-size:14px; cursor:pointer;">
-                <input type="checkbox" id="isPrivate"> 비밀글로 업로드하기
+            
+            <label class="private-label">
+                <input type="checkbox" id="isPrivate"> 
+                <span>비밀글로 업로드</span>
             </label>
+
             <button id="submitBtn" onclick="submitPost()" class="btn-next" style="opacity:0.3;" disabled>에세이 제출하기</button>
         </div>
     </div>
 
+    <!-- 피드 탭 -->
     <div class="content hidden" id="tab-feed">
         <div style="padding-top:40px;">
             <h2 style="font-weight:800; margin-bottom:20px;">모두의 피드</h2>
@@ -122,6 +137,7 @@
         </div>
     </div>
 
+    <!-- 멤버 탭 -->
     <div class="content hidden" id="tab-member">
         <div style="padding-top:40px;">
             <h2 style="font-weight:800; margin-bottom:20px;">클럽 멤버</h2>
@@ -137,6 +153,7 @@
     </div>
   </div>
 
+  <!-- 가입 모달 -->
   <div id="authModal" class="modal-overlay hidden">
     <div class="modal" style="padding:40px 24px; text-align:center; width:100%;">
       <h2 style="font-size:28px; font-weight:800; margin-bottom:10px;">Essay Club</h2>
@@ -151,6 +168,7 @@
     </div>
   </div>
 
+  <!-- 닉네임 수정 모달 -->
   <div id="editProfileModal" class="modal-overlay hidden" style="background: rgba(0,0,0,0.5);">
     <div class="modal" style="padding:30px 24px; background:#FFF; border:2px solid #111; border-radius:24px; width:85%; text-align:center;">
       <h3 style="font-weight:800; margin-bottom:15px;">닉네임 수정</h3>
@@ -199,15 +217,12 @@ postArea.addEventListener('input', () => {
 
 function startApp(uid) {
     onSnapshot(collection(db, "profiles"), (pSnap) => {
-        const userMap = {}; 
-        pSnap.forEach(d => userMap[d.id] = d.data().nickname);
-        
+        const userMap = {}; pSnap.forEach(d => userMap[d.id] = d.data().nickname);
         onSnapshot(collection(db, "posts"), (postSnap) => {
             const today = new Date().toLocaleDateString();
             const doneIds = new Set(); const allPosts = [];
             postSnap.forEach(s => {
-                const d = s.data(); 
-                if(d.createdAt && new Date(d.createdAt.toDate()).toLocaleDateString() === today) doneIds.add(d.uid);
+                const d = s.data(); if(d.createdAt && new Date(d.createdAt.toDate()).toLocaleDateString() === today) doneIds.add(d.uid);
                 allPosts.push({ id: s.id, ...d });
             });
 
@@ -222,7 +237,6 @@ function startApp(uid) {
             const sList = document.getElementById('statusList'); 
             const fList = document.getElementById('fullMemberList');
             sList.innerHTML = ""; fList.innerHTML = "";
-            
             Object.entries(userMap).forEach(([id, name]) => {
                 if(id === "master_admin") return;
                 const done = doneIds.has(id);
