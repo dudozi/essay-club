@@ -48,21 +48,32 @@
   .action-btn { cursor: pointer; text-decoration: underline; color: #666; }
   .empty-msg { text-align: center; padding: 60px 20px; color: #999; font-size: 15px; line-height: 1.6; }
 
-  /* 📍 탭 네비게이션 여백 수정 (스와이프 바 대응) */
+/* 📍 하단 네비게이션 여백 대폭 강화 */
   .tab-nav { 
     display: flex; 
     background: #FFF; 
     border-top: 2px solid var(--main); 
-    /* 하단 여백: 기기 기본 안전 여백 + 15px 추가 */
-    padding: 12px 16px calc(15px + env(safe-area-inset-bottom)); 
+    /* 하단 패딩을 25px + 안전 영역으로 대폭 늘려 막대기와 거리를 둡니다 */
+    padding: 16px 16px calc(25px + env(safe-area-inset-bottom)); 
     position: absolute; 
     bottom: 0; 
     width: 100%; 
-    gap: 8px; 
+    gap: 10px; /* 버튼 사이 간격을 조금 더 넓힘 */
     z-index: 1000; 
   }
-  .tab-btn { flex: 1; border: 2px solid var(--main); padding: 14px; background: #FFF; border-radius: 12px; font-size: 13px; font-weight: bold; cursor: pointer; outline: none; }
-  .tab-btn.active { background: var(--main); color: #FFF; }
+  
+  .tab-btn { 
+    flex: 1; 
+    border: 2px solid var(--main); 
+    padding: 14px 0; /* 세로 길이를 살짝 늘려 터치감을 개선 */
+    background: #FFF; 
+    border-radius: 12px; 
+    font-size: 13px; 
+    font-weight: bold; 
+    cursor: pointer; 
+    outline: none; 
+    transition: all 0.2s; /* 클릭 시 부드러운 반응 */
+  }
 
   .btn-next { width: 100%; padding: 20px; background: var(--main); color: #FFF; border: none; border-radius: 16px; font-size: 16px; font-weight: 800; cursor: pointer; }
   .modal-overlay { position: fixed; inset: 0; background: #FFF; display: flex; align-items: center; justify-content: center; z-index: 2000; }
@@ -93,7 +104,7 @@
     <div class="content hidden" id="tab-write">
         <div style="padding-top:40px;">
             <div class="keyword-banner"><b>💡 오늘의 글감:</b> <span id="writeTabKeyword">...</span></div>
-            <h2 style="font-weight:800; margin-bottom:5px;">문장 젓기</h2>
+            <h2 style="font-weight:800; margin-bottom:5px;">에세이 쓰기</h2>
             <input id="postTitle" type="text" placeholder="제목을 입력하세요 (선택)" style="padding: 12px 18px; font-weight: 700;">
             <div id="charCount" style="font-size:12px; color:#999; margin-bottom:10px; font-weight:600;">0 / 1,000자</div>
             <textarea id="postText" style="height:250px;" placeholder="글감에 대한 생각을 자유롭게 적어보세요."></textarea>
@@ -204,7 +215,7 @@ function startApp(uid) {
             const isDone = doneIds.has(uid);
             document.getElementById('dynamicWelcome').innerHTML = isDone 
                 ? `<b>${myName}</b>님,<br>이야기 남겨줘서 고마워요.` 
-                : `<b>${myName}</b>님,<br>오늘의 생각을 붙잡아 보세요!`;
+                : `<b>${myName}</b>님, 오늘의 생각을<br>붙잡아 보세요!`;
             document.getElementById('myCircle').textContent = myName[0];
             document.getElementById('editNickInput').value = myName;
 
