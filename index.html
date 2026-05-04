@@ -43,18 +43,22 @@
 
   .btn-next { width: 100%; padding: 20px; background: var(--main); color: #FFF; border: none; border-radius: 16px; font-size: 16px; font-weight: 800; cursor: pointer; }
   .btn-next:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-outline { width: 100%; padding: 20px; background: #FFF; color: var(--main); border: 2px solid var(--main); border-radius: 16px; font-size: 16px; font-weight: 800; cursor: pointer; }
   input, textarea { width: 100%; padding: 18px; border: 2px solid var(--main); border-radius: 16px; font-size: 16px; outline: none; margin-bottom: 12px; font-family: inherit; background: #FFF; }
   .mini-profile { width: 32px; height: 32px; border-radius: 50%; background: var(--main); color: #FFF; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; cursor: pointer; flex-shrink: 0; }
   .feed-card { border: 2px solid #111; border-radius: 20px; padding: 20px; margin-bottom: 15px; }
   .keyword-tag { display: inline-block; background: #f0f0f0; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; margin-bottom: 12px; border: 1px solid #DDD; }
   .already-submitted-banner { background: #f0f0f0; border: 2px solid #111; border-radius: 16px; padding: 20px; text-align: center; font-weight: 700; margin-top: 20px; }
 
+  /* 인증 UI */
   .auth-box { padding: 32px 24px; width: 100%; max-width: 360px; }
   .auth-box h2 { font-size: 26px; font-weight: 800; margin: 0 0 6px; }
-  .auth-sub { font-size: 14px; color: #888; margin: 0 0 28px; line-height: 1.5; }
+  .auth-sub { font-size: 14px; color: #888; margin: 0 0 28px; line-height: 1.6; }
   .auth-error { font-size: 13px; color: var(--accent); margin: -6px 0 10px; min-height: 18px; }
-  .auth-back { background: none; border: none; font-size: 14px; color: #999; margin-top: 14px; cursor: pointer; text-decoration: underline; display: block; width: 100%; text-align: center; }
+  .auth-back { background: none; border: none; font-size: 14px; color: #999; margin-top: 16px; cursor: pointer; text-decoration: underline; display: block; width: 100%; text-align: center; }
+  .auth-divider { text-align: center; color: #CCC; font-size: 13px; margin: 12px 0; }
 
+  /* 글감 관리 카드 */
   .kw-manage-card { border: 1.5px solid #DDD; border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
   .kw-date { font-size: 11px; color: #999; margin-top: 2px; }
   .kw-manage-btns { display: flex; gap: 8px; flex-shrink: 0; }
@@ -72,6 +76,7 @@
       <div id="myCircle" class="mini-profile">?</div>
     </div>
 
+    <!-- 오늘 탭 -->
     <div class="content" id="tab-today">
       <div style="padding:40px 0 20px; border-bottom:2px solid #111; margin-bottom:30px; display:flex; justify-content:space-between; align-items:center;">
         <h2 id="dynamicWelcome" style="font-size:24px; font-weight:400; line-height:1.4; margin:0;">반가워요!</h2>
@@ -84,6 +89,7 @@
       <div id="statusList" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;"></div>
     </div>
 
+    <!-- 쓰기 탭 -->
     <div class="content hidden" id="tab-write">
       <div style="padding-top:20px;">
         <div style="background:#f9f9f9; padding:15px; border-radius:15px; margin-bottom:20px;">
@@ -102,6 +108,7 @@
       </div>
     </div>
 
+    <!-- 피드 탭 -->
     <div class="content hidden" id="tab-feed">
       <div style="padding-top:20px;">
         <h2 style="font-weight:800;">피드</h2>
@@ -146,26 +153,59 @@
 
   <!-- ── 인증 모달 ── -->
   <div id="authModal" class="modal-overlay">
-    <!-- Step 1: 공통 암호 -->
-    <div id="authStep1" class="auth-box">
-      <h2>Essay Club</h2>
-      <p class="auth-sub">클럽 암호를 입력해주세요.</p>
-      <input id="pwInput" type="password" placeholder="클럽 암호">
-      <p id="pwError" class="auth-error"></p>
-      <button id="pwBtn" class="btn-next">다음</button>
-    </div>
-    <!-- Step 2: 닉네임 -->
-    <div id="authStep2" class="auth-box hidden">
-      <h2>닉네임 입력</h2>
-      <p class="auth-sub">활동할 닉네임을 입력해주세요.<br>이미 사용 중인 닉네임이면 그대로 로그인됩니다.</p>
-      <input id="nicknameInput" type="text" placeholder="닉네임 (예: 규원)" maxlength="10">
-      <p id="nicknameError" class="auth-error"></p>
-      <button id="nicknameBtn" class="btn-next">시작하기</button>
-      <button id="backToPw" class="auth-back">← 암호 다시 입력</button>
-    </div>
-  </div>
 
+    <!-- Step 0: 신규 / 기존 선택 -->
+    <div id="authStep0" class="auth-box">
+      <h2>Essay Club ✍️</h2>
+      <p class="auth-sub">에세이 클럽에 오신 걸 환영해요.<br>해당하는 항목을 선택해주세요.</p>
+      <button id="goNewUser" class="btn-next" style="margin-bottom:12px;">처음 왔어요</button>
+      <div class="auth-divider">또는</div>
+      <button id="goReturning" class="btn-outline" style="margin-top:12px;">이미 가입했어요</button>
+    </div>
+
+    <!-- Step 1-A: 신규 — 닉네임 -->
+    <div id="authStepNewNick" class="auth-box hidden">
+      <h2>닉네임 설정</h2>
+      <p class="auth-sub">클럽에서 사용할 닉네임을 입력해주세요.<br>나중에 변경이 어려우니 신중하게 정해주세요!</p>
+      <input id="newNickInput" type="text" placeholder="닉네임 (2~10자)" maxlength="10">
+      <p id="newNickError" class="auth-error"></p>
+      <button id="newNickBtn" class="btn-next">다음</button>
+      <button id="backToStep0FromNew" class="auth-back">← 뒤로</button>
+    </div>
+
+    <!-- Step 1-B: 신규 — 비밀번호 설정 -->
+    <div id="authStepNewPin" class="auth-box hidden">
+      <h2>비밀번호 설정</h2>
+      <p class="auth-sub" id="newPinSub">비밀번호 숫자 4자리를 설정해주세요.</p>
+      <input id="newPinInput" type="password" inputmode="numeric" placeholder="숫자 4자리" maxlength="4">
+      <p id="newPinError" class="auth-error"></p>
+      <button id="newPinBtn" class="btn-next">가입 완료</button>
+      <button id="backToNewNick" class="auth-back">← 닉네임 다시 입력</button>
+    </div>
+
+    <!-- Step 2-A: 기존 — 닉네임 -->
+    <div id="authStepRetNick" class="auth-box hidden">
+      <h2>닉네임 입력</h2>
+      <p class="auth-sub">닉네임을 입력해주세요.</p>
+      <input id="retNickInput" type="text" placeholder="닉네임" maxlength="10">
+      <p id="retNickError" class="auth-error"></p>
+      <button id="retNickBtn" class="btn-next">다음</button>
+      <button id="backToStep0FromRet" class="auth-back">← 뒤로</button>
+    </div>
+
+    <!-- Step 2-B: 기존 — 비밀번호 확인 -->
+    <div id="authStepRetPin" class="auth-box hidden">
+      <h2>비밀번호 입력</h2>
+      <p class="auth-sub" id="retPinSub">비밀번호 숫자 4자리를 입력해주세요.</p>
+      <input id="retPinInput" type="password" inputmode="numeric" placeholder="숫자 4자리" maxlength="4">
+      <p id="retPinError" class="auth-error"></p>
+      <button id="retPinBtn" class="btn-next">로그인</button>
+      <button id="backToRetNick" class="auth-back">← 닉네임 다시 입력</button>
+    </div>
+
+  </div>
 </div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
 import { getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc,
@@ -194,6 +234,9 @@ let profilesUnsub  = null;
 let postsUnsub     = null;
 let keywordsUnsub  = null;
 
+// 신규 가입 흐름에서 닉네임을 임시 보관
+let pendingNewNick = null;
+
 // ── 유틸 ─────────────────────────────────────────────────────────────────────
 const getTodayISO  = () => new Date().toISOString().split('T')[0];
 const isSameDay    = ts => ts?.toDate().toISOString().split('T')[0] === getTodayISO();
@@ -212,6 +255,13 @@ function el(tag, props = {}, children = []) {
     else if (c) node.appendChild(c);
   });
   return node;
+}
+
+// 인증 스텝 전환 헬퍼
+function showStep(id) {
+  ['authStep0','authStepNewNick','authStepNewPin','authStepRetNick','authStepRetPin']
+    .forEach(s => document.getElementById(s).classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
 }
 
 window.switchTab = id => {
@@ -237,7 +287,7 @@ window.onload = async () => {
     }
     localStorage.removeItem('essay_session');
   }
-  // 세션 없으면 authModal 표시 (기본값)
+  // 세션 없으면 Step 0 표시 (기본값)
 };
 
 function showMain() {
@@ -248,79 +298,165 @@ function showMain() {
   startApp();
 }
 
-// ── 인증 Step 1: 공통 암호 ───────────────────────────────────────────────────
-document.getElementById('pwBtn').addEventListener('click', async () => {
-  const pw    = document.getElementById('pwInput').value.trim();
-  const errEl = document.getElementById('pwError');
-  errEl.textContent = '';
-  if (!pw) { errEl.textContent = '암호를 입력해주세요.'; return; }
+// ── Step 0: 신규 / 기존 선택 ─────────────────────────────────────────────────
+document.getElementById('goNewUser').addEventListener('click', () => {
+  showStep('authStepNewNick');
+  document.getElementById('newNickInput').focus();
+});
+document.getElementById('goReturning').addEventListener('click', () => {
+  showStep('authStepRetNick');
+  document.getElementById('retNickInput').focus();
+});
 
-  const btn = document.getElementById('pwBtn');
+// ── 신규 Step 1: 닉네임 ──────────────────────────────────────────────────────
+document.getElementById('newNickBtn').addEventListener('click', async () => {
+  const nickname = document.getElementById('newNickInput').value.trim();
+  const errEl    = document.getElementById('newNickError');
+  errEl.textContent = '';
+
+  if (!nickname || nickname.length < 2) { errEl.textContent = '닉네임은 2자 이상이어야 합니다.'; return; }
+
+  const btn = document.getElementById('newNickBtn');
   btn.disabled = true; btn.textContent = '확인 중...';
   try {
-    // Firestore config/secret 문서의 password 필드와 비교
-    const snap = await getDoc(doc(db, 'config', 'secret'));
-    if (!snap.exists() || snap.data().password !== pw) {
-      errEl.textContent = '암호가 올바르지 않습니다.';
+    const snap = await getDoc(doc(db, 'profiles', nickname));
+    if (snap.exists()) {
+      errEl.textContent = '이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해주세요.';
       return;
     }
-    document.getElementById('authStep1').classList.add('hidden');
-    document.getElementById('authStep2').classList.remove('hidden');
-    document.getElementById('nicknameInput').focus();
+    pendingNewNick = nickname;
+    document.getElementById('newPinSub').textContent = `"${nickname}" 으로 가입합니다. 숫자 4자리 비밀번호를 설정해주세요.`;
+    showStep('authStepNewPin');
+    document.getElementById('newPinInput').value = '';
+    document.getElementById('newPinInput').focus();
   } catch {
     errEl.textContent = '오류가 발생했습니다. 다시 시도해주세요.';
   } finally {
     btn.disabled = false; btn.textContent = '다음';
   }
 });
-document.getElementById('pwInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('pwBtn').click();
+document.getElementById('newNickInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('newNickBtn').click();
+});
+document.getElementById('backToStep0FromNew').addEventListener('click', () => {
+  showStep('authStep0');
+  document.getElementById('newNickInput').value = '';
+  document.getElementById('newNickError').textContent = '';
 });
 
-// ── 인증 Step 2: 닉네임 ──────────────────────────────────────────────────────
-document.getElementById('nicknameBtn').addEventListener('click', async () => {
-  const nickname = document.getElementById('nicknameInput').value.trim();
-  const errEl    = document.getElementById('nicknameError');
+// ── 신규 Step 2: 비밀번호 설정 ───────────────────────────────────────────────
+document.getElementById('newPinBtn').addEventListener('click', async () => {
+  const pin   = document.getElementById('newPinInput').value.trim();
+  const errEl = document.getElementById('newPinError');
   errEl.textContent = '';
 
-  if (!nickname)          { errEl.textContent = '닉네임을 입력해주세요.'; return; }
-  if (nickname.length < 2) { errEl.textContent = '닉네임은 2자 이상이어야 합니다.'; return; }
+  if (!pin || pin.length !== 4 || !/^[0-9]{4}$/.test(pin)) {
+    errEl.textContent = '숫자 4자리를 입력해주세요.'; return;
+  }
 
-  const btn = document.getElementById('nicknameBtn');
+  const btn = document.getElementById('newPinBtn');
+  btn.disabled = true; btn.textContent = '가입 중...';
+  try {
+    await setDoc(doc(db, 'profiles', pendingNewNick), {
+      nickname: pendingNewNick,
+      pin,
+      isAdmin:  false,
+      joinedAt: serverTimestamp()
+    });
+    myId     = pendingNewNick;
+    myName   = pendingNewNick;
+    amIAdmin = false;
+    localStorage.setItem('essay_session', myId);
+    showMain();
+  } catch {
+    errEl.textContent = '가입에 실패했습니다. 다시 시도해주세요.';
+    btn.disabled = false; btn.textContent = '가입 완료';
+  }
+});
+document.getElementById('newPinInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('newPinBtn').click();
+});
+document.getElementById('backToNewNick').addEventListener('click', () => {
+  showStep('authStepNewNick');
+  document.getElementById('newPinInput').value = '';
+  document.getElementById('newPinError').textContent = '';
+  pendingNewNick = null;
+});
+
+// ── 기존 Step 1: 닉네임 ──────────────────────────────────────────────────────
+document.getElementById('retNickBtn').addEventListener('click', async () => {
+  const nickname = document.getElementById('retNickInput').value.trim();
+  const errEl    = document.getElementById('retNickError');
+  errEl.textContent = '';
+
+  if (!nickname) { errEl.textContent = '닉네임을 입력해주세요.'; return; }
+
+  const btn = document.getElementById('retNickBtn');
   btn.disabled = true; btn.textContent = '확인 중...';
   try {
-    const profRef = doc(db, 'profiles', nickname);
-    const snap    = await getDoc(profRef);
-
-    if (snap.exists()) {
-      // 기존 닉네임 → 로그인
-      myId     = nickname;
-      myName   = snap.data().nickname;
-      amIAdmin = !!snap.data().isAdmin;
-    } else {
-      // 신규 닉네임 → 가입
-      await setDoc(profRef, { nickname, isAdmin: false, joinedAt: serverTimestamp() });
-      myId     = nickname;
-      myName   = nickname;
-      amIAdmin = false;
+    const snap = await getDoc(doc(db, 'profiles', nickname));
+    if (!snap.exists()) {
+      errEl.textContent = '등록되지 않은 닉네임입니다. 신규 가입을 이용해주세요.';
+      return;
     }
+    document.getElementById('retPinSub').textContent = `"${nickname}" 의 비밀번호 4자리를 입력해주세요.`;
+    showStep('authStepRetPin');
+    document.getElementById('retPinInput').value = '';
+    document.getElementById('retPinInput').focus();
+  } catch {
+    errEl.textContent = '오류가 발생했습니다. 다시 시도해주세요.';
+  } finally {
+    btn.disabled = false; btn.textContent = '다음';
+  }
+});
+document.getElementById('retNickInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('retNickBtn').click();
+});
+document.getElementById('backToStep0FromRet').addEventListener('click', () => {
+  showStep('authStep0');
+  document.getElementById('retNickInput').value = '';
+  document.getElementById('retNickError').textContent = '';
+});
 
+// ── 기존 Step 2: 비밀번호 확인 ───────────────────────────────────────────────
+document.getElementById('retPinBtn').addEventListener('click', async () => {
+  const nickname = document.getElementById('retNickInput').value.trim();
+  const pin      = document.getElementById('retPinInput').value.trim();
+  const errEl    = document.getElementById('retPinError');
+  errEl.textContent = '';
+
+  if (!pin || pin.length !== 4 || !/^[0-9]{4}$/.test(pin)) {
+    errEl.textContent = '숫자 4자리를 입력해주세요.'; return;
+  }
+
+  const btn = document.getElementById('retPinBtn');
+  btn.disabled = true; btn.textContent = '확인 중...';
+  try {
+    const snap = await getDoc(doc(db, 'profiles', nickname));
+    const data = snap.data();
+    // pin 필드가 없는 기존 어드민 계정은 비밀번호 없이 통과
+    if (data.pin && data.pin !== pin) {
+      errEl.textContent = '비밀번호가 올바르지 않습니다.';
+      btn.disabled = false; btn.textContent = '로그인';
+      return;
+    }
+    myId     = nickname;
+    myName   = data.nickname;
+    amIAdmin = !!data.isAdmin;
     localStorage.setItem('essay_session', myId);
     showMain();
   } catch {
     errEl.textContent = '오류가 발생했습니다. 다시 시도해주세요.';
-  } finally {
-    btn.disabled = false; btn.textContent = '시작하기';
+    btn.disabled = false; btn.textContent = '로그인';
   }
 });
-document.getElementById('nicknameInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('nicknameBtn').click();
+document.getElementById('retPinInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('retPinBtn').click();
 });
-document.getElementById('backToPw').addEventListener('click', () => {
-  document.getElementById('authStep2').classList.add('hidden');
-  document.getElementById('authStep1').classList.remove('hidden');
-  document.getElementById('pwInput').value = '';
-  document.getElementById('nicknameInput').value = '';
+document.getElementById('backToRetNick').addEventListener('click', () => {
+  showStep('authStepRetNick');
+  document.getElementById('retPinInput').value = '';
+  document.getElementById('retPinError').textContent = '';
 });
 
 // ── 앱 시작 ──────────────────────────────────────────────────────────────────
