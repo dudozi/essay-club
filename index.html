@@ -525,14 +525,13 @@ function startApp() {
 // ── 오늘 탭 ──────────────────────────────────────────────────────────────────
 function renderStatusAndWelcome(doneIds = new Set()) {
   const welcomeEl = document.getElementById('dynamicWelcome');
-  welcomeEl.innerHTML = '';
-  const bold = el('b', { textContent: myName });
+  
   let rest;
-  if (getIsWeekend())         rest = '님, 주말은 클럽도\n쉬어갑니다. 푹 쉬세요!';
-  else if (doneIds.has(myId)) rest = '님의 생각이\n차곡 쌓였어요';
-  else                        rest = '님, 오늘의 생각을\n붙잡아 보세요!';
-  welcomeEl.appendChild(bold);
-  welcomeEl.appendChild(document.createTextNode(rest));
+  if (getIsWeekend())         rest = '님, 주말은 클럽도<br>쉬어갑니다. 푹 쉬세요!';
+  else if (doneIds.has(myId)) rest = '님의 생각이<br>차곡 쌓였어요';
+  else                        rest = '님, 오늘의 생각을<br>붙잡아 보세요!';
+  
+  welcomeEl.innerHTML = `<b>${myName}</b>${rest}`;
 
   const sList = document.getElementById('statusList');
   if (!sList) return;
