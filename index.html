@@ -98,6 +98,9 @@
         <div id="writeForm">
           <input id="postTitle" type="text" placeholder="제목">
           <textarea id="postText" style="height:300px;" placeholder="생각을 채워주세요."></textarea>
+          <div style="text-align:left; font-size:12px; color:#999; margin:-6px 0 12px 4px;">
+            <span id="charCount">0</span>자 / 1000자 (공백포함)
+          </div>
           <label class="private-wrap"><input type="checkbox" id="isPrivate"> <span>비밀글로 업로드</span></label>
           <button id="submitBtn" class="btn-next" style="opacity:0.3;" disabled>제출하기</button>
         </div>
@@ -498,6 +501,18 @@ function startApp() {
     renderFeed();
   });
 
+  subscribeKeywords();
+
+  onSnapshot(query(collection(db, 'keywords'), orderBy('date', 'desc')), snap => {
+    allKeywords = [];
+    snap.forEach(d => allKeywords.push({ id: d.id, ...d.data() }));
+  });
+
+  scheduleMidnightRefresh();
+}
+
+// ── 오늘의 글감 리스너 (날짜 기준으로 매일 재등록) ──────────────────────────
+function subscribeKeywords() {
   if (keywordsUnsub) keywordsUnsub();
   keywordsUnsub = onSnapshot(
     query(collection(db, 'keywords'), where('date', '<=', getTodayISO()),
@@ -515,11 +530,38 @@ function startApp() {
       });
     }
   );
+}
 
-  onSnapshot(query(collection(db, 'keywords'), orderBy('date', 'desc')), snap => {
-    allKeywords = [];
-    snap.forEach(d => allKeywords.push({ id: d.id, ...d.data() }));
-  });
+// ── 자정 자동 갱신 타이머 ────────────────────────────────────────────────────
+let midnightTimer = null;
+function scheduleMidnightRefresh() {
+  if (midnightTimer) clearTimeout(midnightTimer);
+  const now       = new Date();
+  const tomorrow  = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const msUntilMidnight = tomorrow - now + 500; // 0.5초 여유
+
+  midnightTimer = setTimeout(() => {
+    // 글감 리스너를 새 날짜 기준으로 재등록
+    subscribeKeywords();
+    // posts 리스너도 재등록 (오늘 제출 여부 초기화)
+    if (postsUnsub) postsUnsub();
+    postsUnsub = onSnapshot(collection(db, 'posts'), snap => {
+      allPosts = [];
+      const doneIds = new Set();
+      snap.forEach(s => {
+        const d = s.data();
+        if (isSameDay(d.createdAt)) doneIds.add(d.uid);
+        allPosts.push({ id: s.id, ...d });
+      });
+      todaySubmitted = doneIds.has(myId);
+      document.getElementById('writeForm').classList.toggle('hidden', todaySubmitted);
+      document.getElementById('alreadySubmitted').classList.toggle('hidden', !todaySubmitted);
+      renderStatusAndWelcome(doneIds);
+      renderFeed();
+    });
+    // 다음 자정 타이머 재등록
+    scheduleMidnightRefresh();
+  }, msUntilMidnight);
 }
 
 // ── 오늘 탭 ──────────────────────────────────────────────────────────────────
@@ -629,10 +671,17 @@ document.getElementById('saveEditBtn').addEventListener('click', async () => {
 
 // ── 글 제출 ──────────────────────────────────────────────────────────────────
 document.getElementById('postText')?.addEventListener('input', e => {
-  const len = e.target.value.trim().length;
+  const val = e.target.value;
+  const len = val.length;           // 공백 포함 글자수
+  const trimLen = val.trim().length; // 제출 버튼 활성화는 공백 제외
+  const countEl = document.getElementById('charCount');
+  if (countEl) {
+    countEl.textContent = len;
+    countEl.style.color = len > 1000 ? '#ff4d4d' : '#999';
+  }
   const btn = document.getElementById('submitBtn');
-  btn.disabled = len === 0;
-  btn.style.opacity = len === 0 ? '0.3' : '1';
+  btn.disabled = trimLen === 0;
+  btn.style.opacity = trimLen === 0 ? '0.3' : '1';
 });
 document.getElementById('submitBtn').addEventListener('click', async () => {
   if (todaySubmitted) { alert('오늘은 이미 제출하셨습니다!'); return; }
