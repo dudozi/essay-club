@@ -145,7 +145,11 @@
       <div style="border:2px solid #111; border-radius:16px; padding:16px; margin-bottom:20px;">
         <p style="font-weight:800; margin:0 0 12px;">새 글감 추가</p>
         <input id="newKw" placeholder="글감 내용">
-        <input id="kwDate" type="date">
+        <div style="display:flex; gap:8px;">
+          <input id="kwDate" type="date" style="flex:1; margin-bottom:12px;">
+          <input id="kwTime" type="time" style="flex:1; margin-bottom:12px;" value="07:00">
+        </div>
+        <div style="font-size:12px; color:#999; margin:-6px 0 12px;">공개 날짜와 시각을 설정하세요.</div>
         <button id="saveKwBtn" class="btn-next" style="padding:14px;">저장하기</button>
       </div>
       <p style="font-weight:800; margin:0 0 12px;">등록된 글감</p>
@@ -166,7 +170,17 @@
       <button id="goReturning" class="btn-outline" style="margin-top:12px;">이미 가입했어요</button>
     </div>
 
-    <!-- Step 1-A: 신규 — 닉네임 -->
+    <!-- Step 1-A: 신규 — 실명 -->
+    <div id="authStepNewReal" class="auth-box hidden">
+      <h2>실명 입력</h2>
+      <p class="auth-sub">실제 이름을 입력해주세요.<br>멤버 관리 목적으로만 사용됩니다.</p>
+      <input id="newRealInput" type="text" placeholder="실명 (예: 홍길동)" maxlength="10">
+      <p id="newRealError" class="auth-error"></p>
+      <button id="newRealBtn" class="btn-next">다음</button>
+      <button id="backToStep0FromReal" class="auth-back">← 뒤로</button>
+    </div>
+
+    <!-- Step 1-B: 신규 — 닉네임 -->
     <div id="authStepNewNick" class="auth-box hidden">
       <h2>닉네임 설정</h2>
       <p class="auth-sub">클럽에서 사용할 닉네임을 입력해주세요.<br>나중에 변경이 어려우니 신중하게 정해주세요!</p>
@@ -239,6 +253,7 @@ let keywordsUnsub  = null;
 
 // 신규 가입 흐름에서 닉네임을 임시 보관
 let pendingNewNick = null;
+let pendingRealName = null;
 
 // ── 유틸 ─────────────────────────────────────────────────────────────────────
 const getTodayISO  = () => new Date().toISOString().split('T')[0];
@@ -262,7 +277,7 @@ function el(tag, props = {}, children = []) {
 
 // 인증 스텝 전환 헬퍼
 function showStep(id) {
-  ['authStep0','authStepNewNick','authStepNewPin','authStepRetNick','authStepRetPin']
+  ['authStep0','authStepNewReal','authStepNewNick','authStepNewPin','authStepRetNick','authStepRetPin']
     .forEach(s => document.getElementById(s).classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
 }
@@ -303,12 +318,35 @@ function showMain() {
 
 // ── Step 0: 신규 / 기존 선택 ─────────────────────────────────────────────────
 document.getElementById('goNewUser').addEventListener('click', () => {
-  showStep('authStepNewNick');
-  document.getElementById('newNickInput').focus();
+  showStep('authStepNewReal');
+  document.getElementById('newRealInput').focus();
 });
 document.getElementById('goReturning').addEventListener('click', () => {
   showStep('authStepRetNick');
   document.getElementById('retNickInput').focus();
+});
+
+// ── 신규 Step 0: 실명 ───────────────────────────────────────────────────────
+document.getElementById('newRealBtn').addEventListener('click', () => {
+  const realName = document.getElementById('newRealInput').value.trim();
+  const errEl    = document.getElementById('newRealError');
+  errEl.textContent = '';
+
+  if (!realName || realName.length < 2) {
+    errEl.textContent = '실명은 2자 이상이어야 합니다.'; return;
+  }
+  pendingRealName = realName;
+  showStep('authStepNewNick');
+  document.getElementById('newNickInput').focus();
+});
+document.getElementById('newRealInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('newRealBtn').click();
+});
+document.getElementById('backToStep0FromReal').addEventListener('click', () => {
+  showStep('authStep0');
+  document.getElementById('newRealInput').value = '';
+  document.getElementById('newRealError').textContent = '';
+  pendingRealName = null;
 });
 
 // ── 신규 Step 1: 닉네임 ──────────────────────────────────────────────────────
@@ -342,7 +380,7 @@ document.getElementById('newNickInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('newNickBtn').click();
 });
 document.getElementById('backToStep0FromNew').addEventListener('click', () => {
-  showStep('authStep0');
+  showStep('authStepNewReal');
   document.getElementById('newNickInput').value = '';
   document.getElementById('newNickError').textContent = '';
 });
@@ -361,14 +399,16 @@ document.getElementById('newPinBtn').addEventListener('click', async () => {
   btn.disabled = true; btn.textContent = '가입 중...';
   try {
     await setDoc(doc(db, 'profiles', pendingNewNick), {
-      nickname: pendingNewNick,
+      nickname:  pendingNewNick,
+      realName:  pendingRealName,
       pin,
-      isAdmin:  false,
-      joinedAt: serverTimestamp()
+      isAdmin:   false,
+      joinedAt:  serverTimestamp()
     });
-    myId     = pendingNewNick;
-    myName   = pendingNewNick;
-    amIAdmin = false;
+    myId           = pendingNewNick;
+    myName         = pendingNewNick;
+    amIAdmin       = false;
+    pendingRealName = null;
     localStorage.setItem('essay_session', myId);
     showMain();
   } catch {
@@ -503,7 +543,7 @@ function startApp() {
 
   subscribeKeywords();
 
-  onSnapshot(query(collection(db, 'keywords'), orderBy('date', 'desc')), snap => {
+  onSnapshot(query(collection(db, 'keywords'), orderBy('datetime', 'desc')), snap => {
     allKeywords = [];
     snap.forEach(d => allKeywords.push({ id: d.id, ...d.data() }));
   });
@@ -514,9 +554,10 @@ function startApp() {
 // ── 오늘의 글감 리스너 (날짜 기준으로 매일 재등록) ──────────────────────────
 function subscribeKeywords() {
   if (keywordsUnsub) keywordsUnsub();
+  const nowISO = new Date().toISOString().slice(0, 16); // "YYYY-MM-DDTHH:MM"
   keywordsUnsub = onSnapshot(
-    query(collection(db, 'keywords'), where('date', '<=', getTodayISO()),
-          orderBy('date', 'desc'), limit(1)),
+    query(collection(db, 'keywords'), where('datetime', '<=', nowISO),
+          orderBy('datetime', 'desc'), limit(1)),
     snap => {
       if (snap.empty) {
         document.getElementById('dispKeyword').textContent = '글감이 없습니다';
@@ -718,7 +759,8 @@ function renderKeywordList() {
     const card = el('div', { className: 'kw-manage-card' });
     const info = el('div');
     info.appendChild(el('div', { style: { fontWeight:'700', fontSize:'15px' }, textContent: kw.text }));
-    info.appendChild(el('div', { className: 'kw-date', textContent: kw.date }));
+    const dtLabel = kw.datetime ? kw.datetime.replace('T', ' ') : (kw.date || '');
+    info.appendChild(el('div', { className: 'kw-date', textContent: dtLabel }));
     card.appendChild(info);
 
     const btns = el('div', { className: 'kw-manage-btns' });
@@ -726,9 +768,9 @@ function renderKeywordList() {
     editBtn.addEventListener('click', () => {
       const newText = prompt('글감 수정:', kw.text);
       if (!newText?.trim()) return;
-      const newDate = prompt('날짜 수정 (YYYY-MM-DD):', kw.date);
-      if (!newDate) return;
-      updateDoc(doc(db, 'keywords', kw.id), { text: newText.trim(), date: newDate.trim() })
+      const newDT = prompt('공개 일시 수정 (YYYY-MM-DDTHH:MM, 예: 2025-05-01T07:00):', kw.datetime || (kw.date + 'T07:00'));
+      if (!newDT) return;
+      updateDoc(doc(db, 'keywords', kw.id), { text: newText.trim(), datetime: newDT.trim() })
         .then(() => renderKeywordList())
         .catch(() => alert('수정 실패. 다시 시도해주세요.'));
     });
@@ -748,13 +790,16 @@ function renderKeywordList() {
 document.getElementById('saveKwBtn').addEventListener('click', async () => {
   const text = document.getElementById('newKw').value.trim();
   const date = document.getElementById('kwDate').value;
-  if (!text || !date) { alert('글감과 날짜를 모두 입력해주세요.'); return; }
+  const time = document.getElementById('kwTime').value || '07:00';
+  if (!text || !date) { alert('글감 내용과 날짜를 모두 입력해주세요.'); return; }
+  const datetime = date + 'T' + time; // "YYYY-MM-DDTHH:MM"
   const btn = document.getElementById('saveKwBtn');
   btn.disabled = true; btn.textContent = '저장 중...';
   try {
-    await addDoc(collection(db, 'keywords'), { text, date });
+    await addDoc(collection(db, 'keywords'), { text, datetime });
     document.getElementById('newKw').value  = '';
     document.getElementById('kwDate').value = '';
+    document.getElementById('kwTime').value = '07:00';
     renderKeywordList();
   } catch {
     alert('저장 실패. 다시 시도해주세요.');
