@@ -551,9 +551,29 @@ function startApp() {
   scheduleMidnightRefresh();
 }
 
-// ── 오늘의 글감 리스너 (날짜 기준으로 매일 재등록) ──────────────────────────
+// ── 주말 글감 숨김 판단 ──────────────────────────────────────────────────────
+// 토 07:00 이후 ~ 월 07:00 이전 → 글감 숨김
+function shouldHideKeyword() {
+  const now  = new Date();
+  const day  = now.getDay();   // 0=일, 1=월, 6=토
+  const hour = now.getHours();
+  if (day === 6 && hour >= 7) return true; // 토 07:00 이후
+  if (day === 0)              return true; // 일요일 전체
+  if (day === 1 && hour < 7)  return true; // 월 07:00 이전
+  return false;
+}
+
+// ── 오늘의 글감 리스너 (날짜+시간 기준으로 재등록) ──────────────────────────
 function subscribeKeywords() {
   if (keywordsUnsub) keywordsUnsub();
+
+  // 주말 구간이면 글감 숨김
+  if (shouldHideKeyword()) {
+    document.getElementById('dispKeyword').textContent = '주말은 쉬어갑니다 🌿';
+    document.getElementById('writeTabKeyword').textContent = '주말 휴식';
+    return;
+  }
+
   const nowISO = new Date().toISOString().slice(0, 16); // "YYYY-MM-DDTHH:MM"
   keywordsUnsub = onSnapshot(
     query(collection(db, 'keywords'), where('datetime', '<=', nowISO),
