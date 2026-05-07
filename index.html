@@ -574,7 +574,11 @@ function subscribeKeywords() {
     return;
   }
 
-  const nowISO = new Date().toISOString().slice(0, 16); // "YYYY-MM-DDTHH:MM"
+  // toISOString()은 UTC 기준이라 한국(UTC+9)에서 9시간 차이 발생
+  // 로컬 시각 기준 "YYYY-MM-DDTHH:MM" 문자열 직접 생성
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const nowISO = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
   keywordsUnsub = onSnapshot(
     query(collection(db, 'keywords'), where('datetime', '<=', nowISO),
           orderBy('datetime', 'desc'), limit(1)),
