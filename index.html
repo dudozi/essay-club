@@ -256,8 +256,17 @@ let pendingNewNick = null;
 let pendingRealName = null;
 
 // ── 유틸 ─────────────────────────────────────────────────────────────────────
-const getTodayISO  = () => new Date().toISOString().split('T')[0];
-const isSameDay    = ts => ts?.toDate().toISOString().split('T')[0] === getTodayISO();
+// 로컬 시간 기준으로 날짜 비교 (toISOString은 UTC 기준이라 한국에서 오전 9시 전까지 날짜 오류 발생)
+const pad = n => String(n).padStart(2, '0');
+const getTodayISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+};
+const isSameDay = ts => {
+  if (!ts) return false;
+  const d = ts.toDate();
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}` === getTodayISO();
+};
 const getIsWeekend = () => { const d = new Date().getDay(); return d === 0 || d === 6; };
 
 function el(tag, props = {}, children = []) {
