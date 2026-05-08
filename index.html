@@ -574,9 +574,11 @@ function startApp() {
   onSnapshot(query(collection(db, 'keywords'), orderBy('datetime', 'desc')), snap => {
     allKeywords = [];
     snap.forEach(d => allKeywords.push({ id: d.id, ...d.data() }));
+    // 새 글감 추가/삭제 시 타이머 재등록
+    scheduleNextKeywordRefresh();
   });
 
-  scheduleMidnightRefresh();
+  scheduleNextKeywordRefresh();
 }
 
 // ── 주말 글감 숨김 판단 ──────────────────────────────────────────────────────
@@ -626,36 +628,66 @@ function subscribeKeywords() {
   );
 }
 
-// ── 자정 자동 갱신 타이머 ────────────────────────────────────────────────────
-let midnightTimer = null;
-function scheduleMidnightRefresh() {
-  if (midnightTimer) clearTimeout(midnightTimer);
-  const now       = new Date();
-  const tomorrow  = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-  const msUntilMidnight = tomorrow - now + 500; // 0.5초 여유
+// ── 글감 공개 시각 자동 갱신 타이머 ─────────────────────────────────────────
+// 다음 글감의 datetime을 Firestore에서 읽어 정확한 시각에 리스너 재등록
+let kwRefreshTimer = null;
 
-  midnightTimer = setTimeout(() => {
-    // 글감 리스너를 새 날짜 기준으로 재등록
-    subscribeKeywords();
-    // posts 리스너도 재등록 (오늘 제출 여부 초기화)
-    if (postsUnsub) postsUnsub();
-    postsUnsub = onSnapshot(collection(db, 'posts'), snap => {
-      allPosts = [];
-      const doneIds = new Set();
-      snap.forEach(s => {
-        const d = s.data();
-        if (isAfterCurrentKeyword(d.createdAt)) doneIds.add(d.uid);
-        allPosts.push({ id: s.id, ...d });
-      });
-      todaySubmitted = doneIds.has(myId);
-      document.getElementById('writeForm').classList.toggle('hidden', todaySubmitted);
-      document.getElementById('alreadySubmitted').classList.toggle('hidden', !todaySubmitted);
-      renderStatusAndWelcome(doneIds);
-      renderFeed();
+function resubscribePosts() {
+  if (postsUnsub) postsUnsub();
+  postsUnsub = onSnapshot(collection(db, 'posts'), snap => {
+    allPosts = [];
+    const doneIds = new Set();
+    snap.forEach(s => {
+      const d = s.data();
+      if (isAfterCurrentKeyword(d.createdAt)) doneIds.add(d.uid);
+      allPosts.push({ id: s.id, ...d });
     });
-    // 다음 자정 타이머 재등록
-    scheduleMidnightRefresh();
-  }, msUntilMidnight);
+    todaySubmitted = doneIds.has(myId);
+    document.getElementById('writeForm').classList.toggle('hidden', todaySubmitted);
+    document.getElementById('alreadySubmitted').classList.toggle('hidden', !todaySubmitted);
+    renderStatusAndWelcome(doneIds);
+    renderFeed();
+  });
+}
+
+async function scheduleNextKeywordRefresh() {
+  if (kwRefreshTimer) clearTimeout(kwRefreshTimer);
+
+  // 현재 시각 이후 공개될 글감 중 가장 가까운 것 조회
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const nowISO = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+  try {
+    const snap = await getDocs(
+      query(collection(db, 'keywords'), where('datetime', '>', nowISO),
+            orderBy('datetime', 'asc'), limit(1))
+    );
+
+    if (!snap.empty) {
+      const nextDatetime = snap.docs[0].data().datetime; // "YYYY-MM-DDTHH:MM"
+      const nextDate     = new Date(nextDatetime);
+      const msUntilNext  = nextDate - new Date() + 1000; // 1초 여유
+
+      kwRefreshTimer = setTimeout(async () => {
+        // 1. currentKeywordDatetime 업데이트
+        currentKeywordDatetime = nextDatetime;
+
+        // 2. 글감 리스너 재등록 (새 글감 화면에 노출)
+        subscribeKeywords();
+
+        // 3. posts 리스너 재등록 (새 글감 기준으로 제출 여부 재판단)
+        resubscribePosts();
+
+        // 4. 다음 글감 타이머 재등록
+        scheduleNextKeywordRefresh();
+      }, msUntilNext);
+    }
+    // 다음 글감이 없으면 타이머 없이 대기
+    // (어드민이 새 글감 추가 시 allKeywords onSnapshot이 갱신되면 scheduleNextKeywordRefresh 재호출)
+  } catch(e) {
+    console.warn('다음 글감 타이머 설정 실패:', e);
+  }
 }
 
 // ── 오늘 탭 ──────────────────────────────────────────────────────────────────
