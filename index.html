@@ -246,6 +246,7 @@ let allPosts       = [];
 let allKeywords    = [];
 let userMap        = {};
 let todaySubmitted = false;
+let currentKeywordDatetime = null; // 현재 글감 공개 시각
 let currentEditId  = null;
 let profilesUnsub  = null;
 let postsUnsub     = null;
@@ -266,6 +267,12 @@ const isSameDay = ts => {
   if (!ts) return false;
   const d = ts.toDate();
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}` === getTodayISO();
+};
+// 현재 글감 공개 시각 이후에 작성된 글인지 판단
+const isAfterCurrentKeyword = ts => {
+  if (!ts) return false;
+  if (!currentKeywordDatetime) return isSameDay(ts); // 글감 없으면 날짜 기준 fallback
+  return ts.toDate() >= new Date(currentKeywordDatetime);
 };
 const getIsWeekend = () => { const d = new Date().getDay(); return d === 0 || d === 6; };
 
@@ -540,7 +547,7 @@ function startApp() {
     const doneIds = new Set();
     snap.forEach(s => {
       const d = s.data();
-      if (isSameDay(d.createdAt)) doneIds.add(d.uid);
+      if (isAfterCurrentKeyword(d.createdAt)) doneIds.add(d.uid);
       allPosts.push({ id: s.id, ...d });
     });
     todaySubmitted = doneIds.has(myId);
@@ -599,6 +606,7 @@ function subscribeKeywords() {
       }
       snap.forEach(d => {
         const t = d.data().text;
+        currentKeywordDatetime = d.data().datetime || null;
         document.getElementById('dispKeyword').textContent = t;
         document.getElementById('writeTabKeyword').textContent = t;
       });
@@ -624,7 +632,7 @@ function scheduleMidnightRefresh() {
       const doneIds = new Set();
       snap.forEach(s => {
         const d = s.data();
-        if (isSameDay(d.createdAt)) doneIds.add(d.uid);
+        if (isAfterCurrentKeyword(d.createdAt)) doneIds.add(d.uid);
         allPosts.push({ id: s.id, ...d });
       });
       todaySubmitted = doneIds.has(myId);
