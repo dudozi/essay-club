@@ -159,7 +159,7 @@
   </div>
 
   <!-- ── 인증 모달 ── -->
-  <div id="authModal" class="modal-overlay">
+  <div id="authModal" class="modal-overlay hidden">
 
     <!-- Step 0: 신규 / 기존 선택 -->
     <div id="authStep0" class="auth-box">
@@ -321,7 +321,8 @@ window.onload = async () => {
     }
     localStorage.removeItem('essay_session');
   }
-  // 세션 없으면 Step 0 표시 (기본값)
+  // 세션 없을 때만 인증 모달 표시
+  document.getElementById('authModal').classList.remove('hidden');
 };
 
 function showMain() {
@@ -693,13 +694,14 @@ async function scheduleNextKeywordRefresh() {
 // ── 오늘 탭 ──────────────────────────────────────────────────────────────────
 function renderStatusAndWelcome(doneIds = new Set()) {
   const welcomeEl = document.getElementById('dynamicWelcome');
-  
-  let rest;
-  if (getIsWeekend())         rest = '님, 주말은 클럽도<br>쉬어갑니다. 푹 쉬세요!';
-  else if (doneIds.has(myId)) rest = '님의 생각이<br>차곡 쌓였어요';
-  else                        rest = '님, 오늘의 생각을<br>붙잡아 보세요!';
-  
-  welcomeEl.innerHTML = `<b>${myName}</b>${rest}`;
+  welcomeEl.innerHTML = '';
+  const boldEl = el('b', { textContent: myName });
+  let restText;
+  if (getIsWeekend())         restText = '님, 주말은 클럽도\n쉬어갑니다. 푹 쉬세요!';
+  else if (doneIds.has(myId)) restText = '님의 생각이\n차곡 쌓였어요';
+  else                        restText = '님, 오늘의 생각을\n붙잡아 보세요!';
+  welcomeEl.appendChild(boldEl);
+  welcomeEl.appendChild(document.createTextNode(restText));
 
   const sList = document.getElementById('statusList');
   if (!sList) return;
