@@ -50,12 +50,13 @@
   .keyword-tag { display: inline-block; background: #f0f0f0; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; margin-bottom: 12px; border: 1px solid #DDD; }
   .already-submitted-banner { background: #f0f0f0; border: 2px solid #111; border-radius: 16px; padding: 20px; text-align: center; font-weight: 700; margin-top: 20px; }
 
-  /* 피드 뷰 토글 */
-  .feed-toggle { display:flex; border:2px solid #111; border-radius:10px; overflow:hidden; }
-  .feed-toggle-btn { flex:1; padding:8px 14px; font-size:12px; font-weight:700; border:none; background:#FFF; color:#111; cursor:pointer; }
-  .feed-toggle-btn.active { background:#111; color:#FFF; }
-  .feed-section-header { padding:10px 0 8px; margin:8px 0; border-bottom:2px solid #111; }
-  .feed-section-keyword { font-size:17px; font-weight:800; }
+  /* 피드 세그먼트 컨트롤 */
+  .feed-seg { display:flex; border:2px solid #111; border-radius:10px; overflow:hidden; width:100%; }
+  .feed-seg-btn { flex:1; padding:9px 0; font-size:12px; font-weight:700; border:none; background:#FFF; color:#111; cursor:pointer; }
+  .feed-seg-btn + .feed-seg-btn { border-left:2px solid #111; }
+  .feed-seg-btn.active { background:#111; color:#FFF; }
+  .feed-section-header { padding:10px 0 8px; margin:16px 0 8px; border-bottom:2px solid #111; }
+  .feed-section-keyword { font-size:15px; font-weight:800; }
   .feed-section-count { font-size:12px; color:#999; margin-top:2px; }
 
   /* 피드 카드 본문 접힘 */
@@ -157,11 +158,12 @@
     <!-- 피드 탭 -->
     <div class="content hidden" id="tab-feed">
       <div style="padding-top:20px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-          <h2 style="font-weight:800; margin:0;">피드</h2>
-          <div class="feed-toggle">
-            <button class="feed-toggle-btn active" id="feedToggleAll" onclick="setFeedView('all')">전체</button>
-            <button class="feed-toggle-btn" id="feedToggleGroup" onclick="setFeedView('group')">글감별</button>
+        <div style="margin-bottom:16px;">
+          <h2 style="font-weight:800; margin:0 12px 0 0;">피드</h2>
+          <div class="feed-seg" style="margin-top:12px;">
+            <button class="feed-seg-btn active" id="feedSegDate" onclick="setFeedView('date')">날짜별</button>
+            <button class="feed-seg-btn" id="feedSegMember" onclick="setFeedView('member')">멤버별</button>
+            <button class="feed-seg-btn" id="feedSegMine" onclick="setFeedView('mine')">내 글</button>
           </div>
         </div>
         <div id="feedList"></div>
@@ -309,7 +311,7 @@ let userMap        = {};
 let todaySubmitted = false;
 let currentKeywordDatetime = null; // 현재 글감 공개 시각
 let currentEditId  = null;
-let feedView       = 'all';
+let feedView       = 'date';
 let profilesUnsub  = null;
 let postsUnsub     = null;
 let keywordsUnsub  = null;
@@ -844,8 +846,9 @@ function renderStatusAndWelcome(doneIds = new Set()) {
 // ── 피드 ─────────────────────────────────────────────────────────────────────
 window.setFeedView = (view) => {
   feedView = view;
-  document.getElementById('feedToggleAll').classList.toggle('active', view === 'all');
-  document.getElementById('feedToggleGroup').classList.toggle('active', view === 'group');
+  ['Date','Member','Mine'].forEach(v =>
+    document.getElementById('feedSeg' + v).classList.toggle('active', view === v.toLowerCase())
+  );
   renderFeed();
 };
 
@@ -855,23 +858,64 @@ window.renderFeed = () => {
   feedEl.innerHTML = '';
 
   const sorted = [...allPosts]
-    .sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0))
-    .slice(0, 30);
+    .sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
 
-  if (feedView === 'all') {
-    sorted.forEach(p => feedEl.appendChild(buildFeedCard(p)));
-  } else {
-    // 글감별 그룹핑
+  // ── 내 글 모아보기 ──────────────────────────────────────────────
+  if (feedView === 'mine') {
+    const mine = sorted.filter(p => p.uid === myId);
+    if (mine.length === 0) {
+      feedEl.appendChild(el('div', {
+        style: { textAlign:'center', padding:'48px 0', color:'#999', fontSize:'14px' },
+        textContent: '아직 작성한 글이 없어요'
+      }));
+    } else {
+      mine.forEach(p => feedEl.appendChild(buildFeedCard(p)));
+    }
+    return;
+  }
+
+  // ── 날짜별 그룹핑 ──────────────────────────────────────────────
+  if (feedView === 'date') {
     const groups = new Map();
     sorted.forEach(p => {
-      const key = p.keyword || '글감';
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(p);
+      const d = p.createdAt?.toDate();
+      const key = d
+        ? `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`
+        : '날짜 없음';
+      const label = d
+        ? `${d.getMonth()+1}월 ${d.getDate()}일`
+        : '날짜 없음';
+      if (!groups.has(key)) groups.set(key, { label, posts: [] });
+      groups.get(key).posts.push(p);
     });
-    groups.forEach((posts, keyword) => {
+    groups.forEach(({ label, posts }) => {
       const header = el('div', { className: 'feed-section-header' });
-      header.appendChild(el('div', { className: 'feed-section-keyword', textContent: keyword }));
-      header.appendChild(el('div', { className: 'feed-section-count', textContent: `${posts.length}명 참여` }));
+      header.appendChild(el('div', { className: 'feed-section-keyword', textContent: label }));
+      header.appendChild(el('div', { className: 'feed-section-count', textContent: `${posts.length}편` }));
+      feedEl.appendChild(header);
+      posts.forEach(p => feedEl.appendChild(buildFeedCard(p)));
+    });
+    return;
+  }
+
+  // ── 멤버별 그룹핑 ──────────────────────────────────────────────
+  if (feedView === 'member') {
+    const groups = new Map();
+    sorted.forEach(p => {
+      const name = userMap[p.uid] || '멤버';
+      if (!groups.has(p.uid)) groups.set(p.uid, { name, posts: [] });
+      groups.get(p.uid).posts.push(p);
+    });
+    // 내 글 먼저, 나머지는 닉네임 가나다순
+    const sorted2 = [...groups.entries()].sort(([aId], [bId]) => {
+      if (aId === myId) return -1;
+      if (bId === myId) return 1;
+      return (userMap[aId] || '').localeCompare(userMap[bId] || '', 'ko');
+    });
+    sorted2.forEach(([, { name, posts }]) => {
+      const header = el('div', { className: 'feed-section-header' });
+      header.appendChild(el('div', { className: 'feed-section-keyword', textContent: name }));
+      header.appendChild(el('div', { className: 'feed-section-count', textContent: `${posts.length}편` }));
       feedEl.appendChild(header);
       posts.forEach(p => feedEl.appendChild(buildFeedCard(p)));
     });
