@@ -388,7 +388,8 @@ window.onload = async () => {
       amIAdmin     = !!d0.isAdmin;
       myBatchId    = d0.batchId || 'pilot';
       myBatches    = d0.batches || [myBatchId];
-      currentBatch = localStorage.getItem('essay_currentBatch') || myBatchId;
+      const storedBatch = localStorage.getItem('essay_currentBatch');
+      currentBatch = (storedBatch && myBatches.includes(storedBatch)) ? storedBatch : myBatchId;
       showMain();
       return;
     }
@@ -590,7 +591,8 @@ document.getElementById('retPinBtn').addEventListener('click', async () => {
     amIAdmin     = !!data.isAdmin;
     myBatchId    = data.batchId || 'pilot';
     myBatches    = data.batches || [myBatchId];
-    currentBatch = localStorage.getItem('essay_currentBatch') || myBatchId;
+    const storedBatch = localStorage.getItem('essay_currentBatch');
+    currentBatch = (storedBatch && myBatches.includes(storedBatch)) ? storedBatch : myBatchId;
     localStorage.setItem('essay_session', myId);
     showMain();
   } catch {
@@ -610,21 +612,21 @@ document.getElementById('backToRetNick').addEventListener('click', () => {
 // ── 앱 시작 ──────────────────────────────────────────────────────────────────
 function startApp() {
   document.getElementById('myCircle').textContent = myName[0];
+  document.getElementById('mainTitle').onclick = () => { if (myBatches.length > 1) openBatchPanel(); };
+  document.getElementById('myCircle').onclick = () => { if (myBatches.length > 1) openBatchPanel(); };
 
-  // 기수 2개 이상일 때만 사이드 패널 연결
-  document.getElementById('myCircle').onclick = () => {
-    if (myBatches.length > 1) openBatchPanel();
-  };
-
-  if (amIAdmin && !document.getElementById('adminOpenBtn')) {
-    const btn = el('button', {
-      style: { background:'none', border:'1.5px solid #111', borderRadius:'8px',
-               padding:'5px 10px', fontSize:'12px', fontWeight:'700', cursor:'pointer', marginRight:'8px' },
-      textContent: '글감관리'
-    });
-    btn.id = 'adminOpenBtn';
-    btn.addEventListener('click', () => { renderKeywordList(); toggleModal('adminModal', true); });
-    document.querySelector('.header').insertBefore(btn, document.getElementById('myCircle'));
+  if (amIAdmin) {
+    let adminBtn = document.getElementById('adminOpenBtn');
+    if (!adminBtn) {
+      adminBtn = el('button', {
+        style: { background:'none', border:'1.5px solid #111', borderRadius:'8px',
+                 padding:'5px 10px', fontSize:'12px', fontWeight:'700', cursor:'pointer', marginRight:'8px' },
+        textContent: '글감관리'
+      });
+      adminBtn.id = 'adminOpenBtn';
+      document.querySelector('.header').insertBefore(adminBtn, document.getElementById('myCircle'));
+    }
+    adminBtn.onclick = () => { renderKeywordList(); toggleModal('adminModal', true); };
   }
 
   if (profilesUnsub) profilesUnsub();
@@ -858,7 +860,8 @@ window.renderFeed = () => {
   feedEl.innerHTML = '';
 
   const sorted = [...allPosts]
-    .sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
+    .sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0))
+    .slice(0, 30);
 
   // ── 내 글 모아보기 ──────────────────────────────────────────────
   if (feedView === 'mine') {
@@ -1025,6 +1028,8 @@ document.getElementById('postText')?.addEventListener('input', e => {
 });
 document.getElementById('submitBtn').addEventListener('click', async () => {
   if (todaySubmitted) { alert('오늘은 이미 제출하셨습니다!'); return; }
+  const text = document.getElementById('postText').value;
+  if (text.length > 1000) { alert('글자 수가 1000자를 초과했습니다.'); return; }
   const btn = document.getElementById('submitBtn');
   btn.disabled = true; btn.textContent = '제출 중...';
   try {
@@ -1069,7 +1074,7 @@ function renderKeywordList() {
       const newText = prompt('글감 수정:', kw.text);
       if (!newText?.trim()) return;
       const newDT = prompt('공개 일시 수정 (YYYY-MM-DDTHH:MM, 예: 2025-05-01T07:00):', kw.datetime || (kw.date + 'T07:00'));
-      if (!newDT) return;
+      if (!newDT?.trim()) return;
       updateDoc(doc(db, 'keywords', kw.id), { text: newText.trim(), datetime: newDT.trim() })
         .then(() => renderKeywordList())
         .catch(() => alert('수정 실패. 다시 시도해주세요.'));
