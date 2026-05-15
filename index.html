@@ -357,7 +357,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
 import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc,
-         deleteDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp }
+         deleteDoc, onSnapshot, query, where, orderBy, limit, serverTimestamp, runTransaction }
   from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
 const db = getFirestore(initializeApp({
@@ -566,14 +566,19 @@ document.getElementById('newPinBtn').addEventListener('click', async () => {
   const btn = document.getElementById('newPinBtn');
   btn.disabled = true; btn.textContent = '가입 중...';
   try {
-    await setDoc(doc(db, 'profiles', pendingNewNick), {
-      nickname:  pendingNewNick,
-      realName:  pendingRealName,
-      pin,
-      batchId:   pendingBatchId,
-      batches:   [pendingBatchId],
-      isAdmin:   false,
-      joinedAt:  serverTimestamp()
+    const profileRef = doc(db, 'profiles', pendingNewNick);
+    await runTransaction(db, async (tx) => {
+      const snap = await tx.get(profileRef);
+      if (snap.exists()) throw new Error('DUPLICATE');
+      tx.set(profileRef, {
+        nickname:  pendingNewNick,
+        realName:  pendingRealName,
+        pin,
+        batchId:   pendingBatchId,
+        batches:   [pendingBatchId],
+        isAdmin:   false,
+        joinedAt:  serverTimestamp()
+      });
     });
     myId          = pendingNewNick;
     myName        = pendingNewNick;
@@ -586,8 +591,12 @@ document.getElementById('newPinBtn').addEventListener('click', async () => {
     localStorage.setItem('essay_currentBatch', currentBatch);
     localStorage.setItem('essay_session', myId);
     showMain();
-  } catch {
-    errEl.textContent = '가입에 실패했습니다. 다시 시도해주세요.';
+  } catch (err) {
+    if (err.message === 'DUPLICATE') {
+      errEl.textContent = '이미 사용 중인 닉네임입니다. 이전으로 돌아가 다른 닉네임을 입력해주세요.';
+    } else {
+      errEl.textContent = '가입에 실패했습니다. 다시 시도해주세요.';
+    }
     btn.disabled = false; btn.textContent = '가입 완료';
   }
 });
