@@ -50,6 +50,33 @@
   .keyword-tag { display: inline-block; background: #f0f0f0; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; margin-bottom: 12px; border: 1px solid #DDD; }
   .already-submitted-banner { background: #f0f0f0; border: 2px solid #111; border-radius: 16px; padding: 20px; text-align: center; font-weight: 700; margin-top: 20px; }
 
+  /* 피드 뷰 토글 */
+  .feed-toggle { display:flex; border:2px solid #111; border-radius:10px; overflow:hidden; }
+  .feed-toggle-btn { flex:1; padding:8px 14px; font-size:12px; font-weight:700; border:none; background:#FFF; color:#111; cursor:pointer; }
+  .feed-toggle-btn.active { background:#111; color:#FFF; }
+  .feed-section-header { padding:10px 0 8px; margin:8px 0; border-bottom:2px solid #111; }
+  .feed-section-keyword { font-size:17px; font-weight:800; }
+  .feed-section-count { font-size:12px; color:#999; margin-top:2px; }
+
+  /* 피드 카드 본문 접힘 */
+  .feed-body {
+    white-space: pre-wrap; margin: 0;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+  }
+  .feed-body.expanded {
+    display: block;
+    -webkit-line-clamp: unset;
+  }
+  .feed-more-btn {
+    background: none; border: none; padding: 6px 0 0;
+    font-size: 12px; color: #999; cursor: pointer;
+    text-decoration: underline; display: block;
+  }
+
   /* 인증 UI */
   .auth-box { padding: 32px 24px; width: 100%; max-width: 360px; }
   .auth-box h2 { font-size: 26px; font-weight: 800; margin: 0 0 6px; }
@@ -57,6 +84,22 @@
   .auth-error { font-size: 13px; color: var(--accent); margin: -6px 0 10px; min-height: 18px; }
   .auth-back { background: none; border: none; font-size: 14px; color: #999; margin-top: 16px; cursor: pointer; text-decoration: underline; display: block; width: 100%; text-align: center; }
   .auth-divider { text-align: center; color: #CCC; font-size: 13px; margin: 12px 0; }
+
+  /* 기수 전환 사이드 패널 */
+  .batch-panel {
+    position: fixed; top: 0; right: -280px; width: 260px; height: 100%;
+    background: #FFF; border-left: 2px solid #111; z-index: 9998;
+    padding: calc(20px + env(safe-area-inset-top)) 20px 20px;
+    display: flex; flex-direction: column; gap: 12px;
+    transition: right 0.3s ease; box-shadow: -4px 0 20px rgba(0,0,0,0.08);
+  }
+  .batch-panel.open { right: 0; }
+  .batch-panel-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.2); z-index: 9997; display: none; }
+  .batch-panel-overlay.open { display: block; }
+  .batch-panel h3 { font-size: 13px; font-weight: 800; margin: 0 0 4px; color: #999; }
+  .batch-btn { width: 100%; padding: 14px 16px; border: 2px solid #111; border-radius: 12px; background: #FFF; font-size: 14px; font-weight: 700; cursor: pointer; text-align: left; margin-bottom: 8px; }
+  .batch-btn.active { background: #111; color: #FFF; }
+  .batch-panel-close { margin-top: auto; background: none; border: none; font-size: 13px; color: #999; text-decoration: underline; cursor: pointer; }
 
   /* 글감 관리 카드 */
   .kw-manage-card { border: 1.5px solid #DDD; border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -114,7 +157,13 @@
     <!-- 피드 탭 -->
     <div class="content hidden" id="tab-feed">
       <div style="padding-top:20px;">
-        <h2 style="font-weight:800;">피드</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <h2 style="font-weight:800; margin:0;">피드</h2>
+          <div class="feed-toggle">
+            <button class="feed-toggle-btn active" id="feedToggleAll" onclick="setFeedView('all')">전체</button>
+            <button class="feed-toggle-btn" id="feedToggleGroup" onclick="setFeedView('group')">글감별</button>
+          </div>
+        </div>
         <div id="feedList"></div>
       </div>
     </div>
@@ -158,6 +207,14 @@
     </div>
   </div>
 
+  <!-- 기수 전환 사이드 패널 -->
+  <div class="batch-panel-overlay" id="batchOverlay" onclick="closeBatchPanel()"></div>
+  <div class="batch-panel" id="batchPanel">
+    <h3>기수 전환</h3>
+    <div id="batchBtnList"></div>
+    <button class="batch-panel-close" onclick="closeBatchPanel()">닫기</button>
+  </div>
+
   <!-- ── 인증 모달 ── -->
   <div id="authModal" class="modal-overlay hidden">
 
@@ -170,11 +227,12 @@
       <button id="goReturning" class="btn-outline" style="margin-top:12px;">이미 가입했어요</button>
     </div>
 
-    <!-- Step 1-A: 신규 — 실명 -->
+    <!-- Step 1-A: 신규 — 실명 + 참여코드 -->
     <div id="authStepNewReal" class="auth-box hidden">
-      <h2>실명 입력</h2>
-      <p class="auth-sub">실제 이름을 입력해주세요.<br>멤버 관리 목적으로만 사용됩니다.</p>
+      <h2>기본 정보 입력</h2>
+      <p class="auth-sub">실제 이름과 참여 코드를 입력해주세요.</p>
       <input id="newRealInput" type="text" placeholder="실명 (예: 홍길동)" maxlength="10">
+      <input id="newCodeInput" type="text" placeholder="참여 코드 (예: MOLE01)" maxlength="10" style="text-transform:uppercase;">
       <p id="newRealError" class="auth-error"></p>
       <button id="newRealBtn" class="btn-next">다음</button>
       <button id="backToStep0FromReal" class="auth-back">← 뒤로</button>
@@ -242,19 +300,28 @@ const db = getFirestore(initializeApp({
 let myId           = null;
 let myName         = '멤버';
 let amIAdmin       = false;
+let myBatchId      = null;
+let myBatches      = [];
+let currentBatch   = null;
 let allPosts       = [];
 let allKeywords    = [];
 let userMap        = {};
 let todaySubmitted = false;
 let currentKeywordDatetime = null; // 현재 글감 공개 시각
 let currentEditId  = null;
+let feedView       = 'all';
 let profilesUnsub  = null;
 let postsUnsub     = null;
 let keywordsUnsub  = null;
 
 // 신규 가입 흐름에서 닉네임을 임시 보관
-let pendingNewNick = null;
+let pendingNewNick  = null;
 let pendingRealName = null;
+let pendingBatchId  = null;
+
+// 참여 코드 → batchId 매핑
+const BATCH_CODES = { 'MOLE0': '0', 'MOLE01': '1' };
+const BATCH_LABELS = { 'pilot': '파일럿 1차', '0': '파일럿 2차', '1': '정식 1기' };
 
 // ── 유틸 ─────────────────────────────────────────────────────────────────────
 // 로컬 시간 기준으로 날짜 비교 (toISOString은 UTC 기준이라 한국에서 오전 9시 전까지 날짜 오류 발생)
@@ -313,9 +380,13 @@ window.onload = async () => {
   if (saved) {
     const snap = await getDoc(doc(db, 'profiles', saved));
     if (snap.exists()) {
-      myId     = saved;
-      myName   = snap.data().nickname;
-      amIAdmin = !!snap.data().isAdmin;
+      const d0 = snap.data();
+      myId         = saved;
+      myName       = d0.nickname;
+      amIAdmin     = !!d0.isAdmin;
+      myBatchId    = d0.batchId || 'pilot';
+      myBatches    = d0.batches || [myBatchId];
+      currentBatch = localStorage.getItem('essay_currentBatch') || myBatchId;
       showMain();
       return;
     }
@@ -346,13 +417,16 @@ document.getElementById('goReturning').addEventListener('click', () => {
 // ── 신규 Step 0: 실명 ───────────────────────────────────────────────────────
 document.getElementById('newRealBtn').addEventListener('click', () => {
   const realName = document.getElementById('newRealInput').value.trim();
+  const code     = document.getElementById('newCodeInput').value.trim().toUpperCase();
   const errEl    = document.getElementById('newRealError');
   errEl.textContent = '';
 
-  if (!realName || realName.length < 2) {
-    errEl.textContent = '실명은 2자 이상이어야 합니다.'; return;
-  }
+  if (!realName || realName.length < 2) { errEl.textContent = '실명은 2자 이상이어야 합니다.'; return; }
+  if (!code) { errEl.textContent = '참여 코드를 입력해주세요.'; return; }
+  const batchId = BATCH_CODES[code];
+  if (!batchId) { errEl.textContent = '올바르지 않은 참여 코드입니다.'; return; }
   pendingRealName = realName;
+  pendingBatchId  = batchId;
   showStep('authStepNewNick');
   document.getElementById('newNickInput').focus();
 });
@@ -362,8 +436,10 @@ document.getElementById('newRealInput').addEventListener('keydown', e => {
 document.getElementById('backToStep0FromReal').addEventListener('click', () => {
   showStep('authStep0');
   document.getElementById('newRealInput').value = '';
+  document.getElementById('newCodeInput').value = '';
   document.getElementById('newRealError').textContent = '';
   pendingRealName = null;
+  pendingBatchId  = null;
 });
 
 // ── 신규 Step 1: 닉네임 ──────────────────────────────────────────────────────
@@ -419,13 +495,20 @@ document.getElementById('newPinBtn').addEventListener('click', async () => {
       nickname:  pendingNewNick,
       realName:  pendingRealName,
       pin,
+      batchId:   pendingBatchId,
+      batches:   [pendingBatchId],
       isAdmin:   false,
       joinedAt:  serverTimestamp()
     });
-    myId           = pendingNewNick;
-    myName         = pendingNewNick;
-    amIAdmin       = false;
+    myId          = pendingNewNick;
+    myName        = pendingNewNick;
+    amIAdmin      = false;
+    myBatchId     = pendingBatchId;
+    myBatches     = [pendingBatchId];
+    currentBatch  = pendingBatchId;
     pendingRealName = null;
+    pendingBatchId  = null;
+    localStorage.setItem('essay_currentBatch', currentBatch);
     localStorage.setItem('essay_session', myId);
     showMain();
   } catch {
@@ -500,9 +583,12 @@ document.getElementById('retPinBtn').addEventListener('click', async () => {
       btn.disabled = false; btn.textContent = '로그인';
       return;
     }
-    myId     = nickname;
-    myName   = data.nickname;
-    amIAdmin = !!data.isAdmin;
+    myId         = nickname;
+    myName       = data.nickname;
+    amIAdmin     = !!data.isAdmin;
+    myBatchId    = data.batchId || 'pilot';
+    myBatches    = data.batches || [myBatchId];
+    currentBatch = localStorage.getItem('essay_currentBatch') || myBatchId;
     localStorage.setItem('essay_session', myId);
     showMain();
   } catch {
@@ -523,6 +609,11 @@ document.getElementById('backToRetNick').addEventListener('click', () => {
 function startApp() {
   document.getElementById('myCircle').textContent = myName[0];
 
+  // 기수 2개 이상일 때만 사이드 패널 연결
+  document.getElementById('myCircle').onclick = () => {
+    if (myBatches.length > 1) openBatchPanel();
+  };
+
   if (amIAdmin && !document.getElementById('adminOpenBtn')) {
     const btn = el('button', {
       style: { background:'none', border:'1.5px solid #111', borderRadius:'8px',
@@ -537,7 +628,11 @@ function startApp() {
   if (profilesUnsub) profilesUnsub();
   profilesUnsub = onSnapshot(collection(db, 'profiles'), snap => {
     userMap = {};
-    snap.forEach(d => { userMap[d.id] = d.data().nickname; });
+    snap.forEach(d => {
+      const data = d.data();
+      const bArr = data.batches || [data.batchId || 'pilot'];
+      if (bArr.includes(currentBatch)) userMap[d.id] = data.nickname;
+    });
     renderStatusAndWelcome();
     renderFeed();
   });
@@ -547,14 +642,13 @@ function startApp() {
     const d = new Date();
     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   })();
-  getDocs(query(collection(db, 'keywords'), where('datetime', '<=', nowISO),
-    orderBy('datetime', 'desc'), limit(1))).then(snap => {
+  getDocs(query(collection(db, 'keywords'), where('batchId', '==', currentBatch), where('datetime', '<=', nowISO), orderBy('datetime', 'desc'), limit(1))).then(snap => {
     if (!snap.empty) {
       currentKeywordDatetime = snap.docs[0].data().datetime || null;
     }
     // currentKeywordDatetime 세팅 후 posts 리스너 등록
     if (postsUnsub) postsUnsub();
-    postsUnsub = onSnapshot(collection(db, 'posts'), snap => {
+    postsUnsub = onSnapshot(query(collection(db, 'posts'), where('batchId', '==', currentBatch)), snap => {
       allPosts = [];
       const doneIds = new Set();
       snap.forEach(s => {
@@ -572,7 +666,7 @@ function startApp() {
 
   subscribeKeywords();
 
-  onSnapshot(query(collection(db, 'keywords'), orderBy('datetime', 'desc')), snap => {
+  onSnapshot(query(collection(db, 'keywords'), where('batchId', '==', currentBatch), orderBy('datetime', 'desc')), snap => {
     allKeywords = [];
     snap.forEach(d => allKeywords.push({ id: d.id, ...d.data() }));
     // 새 글감 추가/삭제 시 타이머 재등록
@@ -611,8 +705,7 @@ function subscribeKeywords() {
   const pad = n => String(n).padStart(2, '0');
   const nowISO = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
   keywordsUnsub = onSnapshot(
-    query(collection(db, 'keywords'), where('datetime', '<=', nowISO),
-          orderBy('datetime', 'desc'), limit(1)),
+    query(collection(db, 'keywords'), where('batchId', '==', currentBatch), where('datetime', '<=', nowISO), orderBy('datetime', 'desc'), limit(1)),
     snap => {
       if (snap.empty) {
         document.getElementById('dispKeyword').textContent = '글감이 없습니다';
@@ -629,13 +722,43 @@ function subscribeKeywords() {
   );
 }
 
+// ── 기수 전환 사이드 패널 ────────────────────────────────────────────────────
+window.openBatchPanel = () => {
+  const listEl = document.getElementById('batchBtnList');
+  listEl.innerHTML = '';
+  myBatches.forEach(bId => {
+    const btn = el('button', {
+      className: 'batch-btn' + (bId === currentBatch ? ' active' : ''),
+      textContent: BATCH_LABELS[bId] || `기수 ${bId}`
+    });
+    btn.addEventListener('click', () => {
+      if (bId === currentBatch) { closeBatchPanel(); return; }
+      currentBatch = bId;
+      localStorage.setItem('essay_currentBatch', currentBatch);
+      closeBatchPanel();
+      if (profilesUnsub) profilesUnsub();
+      if (postsUnsub) postsUnsub();
+      if (keywordsUnsub) keywordsUnsub();
+      if (kwRefreshTimer) clearTimeout(kwRefreshTimer);
+      startApp();
+    });
+    listEl.appendChild(btn);
+  });
+  document.getElementById('batchPanel').classList.add('open');
+  document.getElementById('batchOverlay').classList.add('open');
+};
+window.closeBatchPanel = () => {
+  document.getElementById('batchPanel').classList.remove('open');
+  document.getElementById('batchOverlay').classList.remove('open');
+};
+
 // ── 글감 공개 시각 자동 갱신 타이머 ─────────────────────────────────────────
 // 다음 글감의 datetime을 Firestore에서 읽어 정확한 시각에 리스너 재등록
 let kwRefreshTimer = null;
 
 function resubscribePosts() {
   if (postsUnsub) postsUnsub();
-  postsUnsub = onSnapshot(collection(db, 'posts'), snap => {
+  postsUnsub = onSnapshot(query(collection(db, 'posts'), where('batchId', '==', currentBatch)), snap => {
     allPosts = [];
     const doneIds = new Set();
     snap.forEach(s => {
@@ -661,8 +784,7 @@ async function scheduleNextKeywordRefresh() {
 
   try {
     const snap = await getDocs(
-      query(collection(db, 'keywords'), where('datetime', '>', nowISO),
-            orderBy('datetime', 'asc'), limit(1))
+      query(collection(db, 'keywords'), where('batchId', '==', currentBatch), where('datetime', '>', nowISO), orderBy('datetime', 'asc'), limit(1))
     );
 
     if (!snap.empty) {
@@ -720,6 +842,13 @@ function renderStatusAndWelcome(doneIds = new Set()) {
 }
 
 // ── 피드 ─────────────────────────────────────────────────────────────────────
+window.setFeedView = (view) => {
+  feedView = view;
+  document.getElementById('feedToggleAll').classList.toggle('active', view === 'all');
+  document.getElementById('feedToggleGroup').classList.toggle('active', view === 'group');
+  renderFeed();
+};
+
 window.renderFeed = () => {
   const feedEl = document.getElementById('feedList');
   if (!feedEl) return;
@@ -729,41 +858,24 @@ window.renderFeed = () => {
     .sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0))
     .slice(0, 30);
 
-  sorted.forEach(p => {
-    const name      = userMap[p.uid] || '멤버';
-    const isMy      = p.uid === myId;
-    const isPrivate = p.isPrivate && !isMy;
-
-    const card = el('div', { className: 'feed-card' });
-    card.appendChild(el('div', { className: 'keyword-tag', textContent: `# ${p.keyword || '글감'}` }));
-
-    const headerRow = el('div', { style: { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'4px' } });
-    headerRow.appendChild(el('b', { textContent: name }));
-
-    const btnWrap = el('div', { style: { display:'flex', gap:'10px' } });
-    if (isMy) {
-      const editBtn = el('span', { style: { textDecoration:'underline', cursor:'pointer', fontSize:'12px' }, textContent: '수정' });
-      editBtn.addEventListener('click', () => openEditModal(p.id, p.title || '', p.text));
-      btnWrap.appendChild(editBtn);
-    }
-    if (amIAdmin) {
-      const delBtn = el('span', { style: { textDecoration:'underline', cursor:'pointer', fontSize:'12px', color:'#ff4d4d' }, textContent: '삭제' });
-      delBtn.addEventListener('click', async () => {
-        if (!confirm('이 글을 삭제할까요?')) return;
-        try { await deleteDoc(doc(db, 'posts', p.id)); }
-        catch { alert('삭제에 실패했습니다.'); }
-      });
-      btnWrap.appendChild(delBtn);
-    }
-    headerRow.appendChild(btnWrap);
-    card.appendChild(headerRow);
-    if (p.title) card.appendChild(el('h3', { textContent: p.title, style: { margin:'8px 0' } }));
-    card.appendChild(el('p', {
-      style: { whiteSpace:'pre-wrap', margin:'0', color: isPrivate ? '#999' : '#111' },
-      textContent: isPrivate ? '비밀글입니다. 🔒' : p.text
-    }));
-    feedEl.appendChild(card);
-  });
+  if (feedView === 'all') {
+    sorted.forEach(p => feedEl.appendChild(buildFeedCard(p)));
+  } else {
+    // 글감별 그룹핑
+    const groups = new Map();
+    sorted.forEach(p => {
+      const key = p.keyword || '글감';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(p);
+    });
+    groups.forEach((posts, keyword) => {
+      const header = el('div', { className: 'feed-section-header' });
+      header.appendChild(el('div', { className: 'feed-section-keyword', textContent: keyword }));
+      header.appendChild(el('div', { className: 'feed-section-count', textContent: `${posts.length}명 참여` }));
+      feedEl.appendChild(header);
+      posts.forEach(p => feedEl.appendChild(buildFeedCard(p)));
+    });
+  }
 
   if (sorted.length === 30 && allPosts.length > 30) {
     feedEl.appendChild(el('div', {
@@ -772,6 +884,61 @@ window.renderFeed = () => {
     }));
   }
 };
+
+// ── 피드 카드 생성 ────────────────────────────────────────────────────────────
+function buildFeedCard(p) {
+  const name      = userMap[p.uid] || '멤버';
+  const isMy      = p.uid === myId;
+  const isPrivate = p.isPrivate && !isMy;
+
+  const card = el('div', { className: 'feed-card' });
+  card.appendChild(el('div', { className: 'keyword-tag', textContent: `# ${p.keyword || '글감'}` }));
+
+  const headerRow = el('div', { style: { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'4px' } });
+  headerRow.appendChild(el('b', { textContent: name }));
+
+  const btnWrap = el('div', { style: { display:'flex', gap:'10px' } });
+  if (isMy) {
+    const editBtn = el('span', { style: { textDecoration:'underline', cursor:'pointer', fontSize:'12px' }, textContent: '수정' });
+    editBtn.addEventListener('click', () => openEditModal(p.id, p.title || '', p.text));
+    btnWrap.appendChild(editBtn);
+  }
+  if (amIAdmin) {
+    const delBtn = el('span', { style: { textDecoration:'underline', cursor:'pointer', fontSize:'12px', color:'#ff4d4d' }, textContent: '삭제' });
+    delBtn.addEventListener('click', async () => {
+      if (!confirm('이 글을 삭제할까요?')) return;
+      try { await deleteDoc(doc(db, 'posts', p.id)); }
+      catch { alert('삭제에 실패했습니다.'); }
+    });
+    btnWrap.appendChild(delBtn);
+  }
+  headerRow.appendChild(btnWrap);
+  card.appendChild(headerRow);
+  if (p.title) card.appendChild(el('h3', { textContent: p.title, style: { margin:'8px 0' } }));
+
+  const bodyText = isPrivate ? '비밀글입니다. 🔒' : p.text;
+  const bodyEl = el('p', {
+    className: 'feed-body',
+    style: { color: isPrivate ? '#999' : '#111' },
+    textContent: bodyText
+  });
+  card.appendChild(bodyEl);
+
+  if (!isPrivate) {
+    requestAnimationFrame(() => {
+      const lineHeight = parseFloat(getComputedStyle(bodyEl).lineHeight) || 20;
+      const maxHeight  = lineHeight * 4;
+      if (bodyEl.scrollHeight > maxHeight + 2) {
+        const moreBtn = el('button', { className: 'feed-more-btn', textContent: '더보기' });
+        moreBtn.addEventListener('click', () => {
+          const expanded = bodyEl.classList.toggle('expanded');
+          moreBtn.textContent = expanded ? '접기' : '더보기';
+        });
+        card.appendChild(moreBtn);
+      }
+    });
+  }
+  return card;
 
 // ── 글 수정 ──────────────────────────────────────────────────────────────────
 function openEditModal(id, title, text) {
@@ -818,6 +985,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
   try {
     await addDoc(collection(db, 'posts'), {
       uid:       myId,
+      batchId:   currentBatch,
       title:     document.getElementById('postTitle').value,
       text:      document.getElementById('postText').value,
       isPrivate: document.getElementById('isPrivate').checked,
@@ -883,7 +1051,7 @@ document.getElementById('saveKwBtn').addEventListener('click', async () => {
   const btn = document.getElementById('saveKwBtn');
   btn.disabled = true; btn.textContent = '저장 중...';
   try {
-    await addDoc(collection(db, 'keywords'), { text, datetime });
+    await addDoc(collection(db, 'keywords'), { text, datetime, batchId: currentBatch });
     document.getElementById('newKw').value  = '';
     document.getElementById('kwDate').value = '';
     document.getElementById('kwTime').value = '07:00';
