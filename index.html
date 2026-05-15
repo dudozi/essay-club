@@ -62,24 +62,66 @@
   .feed-filter-btn.active { background:#111; color:#FFF; }
   .feed-filter-btn .icon { font-size:13px; }
 
-  /* 날짜 달력 드롭다운 */
-  .feed-dropdown {
-    position:absolute; top:calc(100% + 8px); left:0; right:0;
-    z-index:500; background:#FFF;
-    border:2px solid #111; border-radius:16px;
-    padding:16px; box-shadow:6px 6px 0 #111;
+  /* ── 바텀 시트 ── */
+  .sheet-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 800;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  .sheet-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .bottom-sheet {
+    position: fixed; left: 0; right: 0; bottom: -100%;
+    z-index: 900;
+    background: #FFF;
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.18);
+    padding: 0 0 calc(24px + env(safe-area-inset-bottom));
+    transition: bottom 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    max-height: 75svh;
+    display: flex; flex-direction: column;
+  }
+  .bottom-sheet.open { bottom: 0; }
+
+  .sheet-handle-bar {
+    width: 40px; height: 4px; border-radius: 2px;
+    background: #DDD; margin: 12px auto 0; flex-shrink: 0;
+  }
+  .sheet-header {
+    padding: 14px 20px 12px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1.5px solid #F0F0F0; flex-shrink: 0;
+  }
+  .sheet-title { font-size: 13px; font-weight: 800; color: #999; letter-spacing: 0.05em; }
+  .sheet-close-btn {
+    background: none; border: none; cursor: pointer;
+    font-size: 20px; color: #999; padding: 0; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px;
+  }
+  .sheet-body {
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: 10px 16px 0; flex: 1;
   }
 
-  /* 멤버/글감 선택 드롭다운 */
-  .member-list { display:flex; flex-direction:column; gap:6px; max-height:360px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  /* 멤버/글감 선택 리스트 */
+  .member-list { display:flex; flex-direction:column; gap:6px; }
   .member-item {
     display:flex; align-items:center; gap:10px;
-    padding:10px 12px; border:2px solid #DDD; border-radius:12px;
+    padding:12px 14px; border:2px solid #E8E8E8; border-radius:14px;
     cursor:pointer; font-size:13px; font-weight:700;
-    transition:all 0.1s;
+    transition: all 0.15s;
   }
+  .member-item:active { transform: scale(0.98); }
   .member-item:hover { border-color:#111; }
   .member-item.selected { border-color:#111; background:#111; color:#FFF; }
+  .member-item.reset-item {
+    border-color: #E8E8E8; background: #F8F8F8; color: #666;
+    font-weight: 600;
+  }
+  .member-item.reset-item:hover { border-color: #999; background: #F0F0F0; }
   .member-avatar {
     width:28px; height:28px; border-radius:50%;
     background:#111; color:#FFF;
@@ -87,16 +129,6 @@
     font-size:11px; font-weight:800; flex-shrink:0;
   }
   .member-item.selected .member-avatar { background:#FFF; color:#111; }
-
-  /* 활성 필터 칩 */
-  .active-filter-chip {
-    display:inline-flex; align-items:center; gap:6px;
-    background:#111; color:#FFF; border-radius:100px;
-    padding:5px 10px 5px 12px; font-size:12px; font-weight:700; margin-bottom:12px;
-  }
-  .chip-clear { background:rgba(255,255,255,0.25); border:none; border-radius:50%;
-    width:18px; height:18px; display:flex; align-items:center; justify-content:center;
-    cursor:pointer; font-size:11px; color:#FFF; padding:0; }
 
   .feed-section-header { padding:10px 0 8px; margin:16px 0 8px; border-bottom:2px solid #111; }
   .feed-section-keyword { font-size:15px; font-weight:800; }
@@ -204,38 +236,22 @@
       <div style="padding-top:20px;">
         <h2 style="font-weight:800; margin:0 0 14px;">피드</h2>
 
-        <!-- 필터 버튼 바 + 드롭다운 (position:relative wrapper) -->
-        <div style="position:relative; margin-bottom:4px;">
-          <div class="feed-filter-bar" id="feedFilterBar">
-            <button class="feed-filter-btn active" id="filterBtnAll" onclick="applyFilter('all')">
-              전체
-            </button>
-            <button class="feed-filter-btn" id="filterBtnMine" onclick="applyFilter('mine')">
-              <span class="icon">✍️</span> 내 글만
-            </button>
-            <button class="feed-filter-btn" id="filterBtnDate" onclick="toggleKeywordPicker(event)">
-              <span class="icon">📅</span> 날짜별
-            </button>
-            <button class="feed-filter-btn" id="filterBtnMember" onclick="toggleMemberPicker(event)">
-              <span class="icon">👤</span> 멤버별
-            </button>
-          </div>
-
-          <!-- 글감별 피커 (absolute) -->
-          <div id="keywordPicker" class="feed-dropdown hidden">
-            <div style="font-size:11px; font-weight:800; color:#999; margin-bottom:8px; letter-spacing:0.05em;">글감 선택</div>
-            <div class="member-list" id="keywordList"></div>
-          </div>
-
-          <!-- 멤버 선택 드롭다운 (absolute) -->
-          <div id="memberPicker" class="feed-dropdown hidden">
-            <div style="font-size:11px; font-weight:800; color:#999; margin-bottom:8px; letter-spacing:0.05em;">멤버 선택</div>
-            <div class="member-list" id="memberList"></div>
-          </div>
+        <!-- 필터 버튼 바 -->
+        <div class="feed-filter-bar" id="feedFilterBar">
+          <button class="feed-filter-btn active" id="filterBtnAll" onclick="applyFilter('all')">
+            전체
+          </button>
+          <button class="feed-filter-btn" id="filterBtnMine" onclick="applyFilter('mine')">
+            <span class="icon">✍️</span> 내 글만
+          </button>
+          <button class="feed-filter-btn" id="filterBtnDate" onclick="toggleKeywordPicker(event)">
+            <span class="icon">📅</span> 날짜별
+          </button>
+          <button class="feed-filter-btn" id="filterBtnMember" onclick="toggleMemberPicker(event)">
+            <span class="icon">👤</span> 멤버별
+          </button>
         </div>
 
-        <!-- 활성 필터 표시 -->
-        <div id="activeChip" class="hidden"></div>
 
         <div id="feedList"></div>
       </div>
@@ -277,6 +293,33 @@
       <p style="font-weight:800; margin:0 0 12px;">등록된 글감</p>
       <div id="kwList" style="overflow-y:auto; flex:1;"></div>
       <button onclick="toggleModal('adminModal', false)" class="auth-back">닫기</button>
+    </div>
+  </div>
+
+  <!-- 바텀 시트 오버레이 (공통) -->
+  <div class="sheet-overlay" id="sheetOverlay" onclick="closeAllSheets()"></div>
+
+  <!-- 글감별 바텀 시트 -->
+  <div class="bottom-sheet" id="keywordSheet">
+    <div class="sheet-handle-bar"></div>
+    <div class="sheet-header">
+      <span class="sheet-title">글감 선택</span>
+      <button class="sheet-close-btn" onclick="closeAllSheets()">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="member-list" id="keywordList"></div>
+    </div>
+  </div>
+
+  <!-- 멤버별 바텀 시트 -->
+  <div class="bottom-sheet" id="memberSheet">
+    <div class="sheet-handle-bar"></div>
+    <div class="sheet-header">
+      <span class="sheet-title">멤버 선택</span>
+      <button class="sheet-close-btn" onclick="closeAllSheets()">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="member-list" id="memberList"></div>
     </div>
   </div>
 
@@ -1015,6 +1058,46 @@ function updateFilterButtons() {
     const map = { All:'all', Mine:'mine', Date:'date', Member:'member' };
     btn.classList.toggle('active', activeFilter === map[id]);
   });
+
+  // 날짜별 버튼 텍스트 업데이트
+  const dateBtn = document.getElementById('filterBtnDate');
+  if (dateBtn) {
+    if (activeFilter === 'date' && selectedKeyword) {
+      const shortLabel = selectedKeyword.length > 8 ? selectedKeyword.slice(0, 8) + '…' : selectedKeyword;
+      dateBtn.innerHTML = `<span class="icon">📅</span> ${shortLabel}`;
+    } else {
+      dateBtn.innerHTML = `<span class="icon">📅</span> 날짜별`;
+    }
+  }
+
+  // 멤버별 버튼 텍스트 업데이트
+  const memberBtn = document.getElementById('filterBtnMember');
+  if (memberBtn) {
+    if (activeFilter === 'member' && selectedMemberId) {
+      const name = userMap[selectedMemberId] || '멤버';
+      memberBtn.innerHTML = `<span class="icon">👤</span> ${name}`;
+    } else {
+      memberBtn.innerHTML = `<span class="icon">👤</span> 멤버별`;
+    }
+  }
+}
+
+// ── 바텀 시트 열기/닫기 ─────────────────────────────────────────────────────
+function openSheet(sheetId) {
+  document.getElementById('sheetOverlay').classList.add('open');
+  document.getElementById(sheetId).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+window.closeAllSheets = () => {
+  document.getElementById('sheetOverlay').classList.remove('open');
+  document.getElementById('keywordSheet').classList.remove('open');
+  document.getElementById('memberSheet').classList.remove('open');
+  document.body.style.overflow = '';
+};
+
+function closePickers() {
+  closeAllSheets();
 }
 
 // ── 글감별 피커 ─────────────────────────────────────────────────────────────────
@@ -1023,15 +1106,13 @@ let selectedKeyword = null;
 
 window.toggleKeywordPicker = (e) => {
   e?.stopPropagation();
-  const kp = document.getElementById('keywordPicker');
-  const mp = document.getElementById('memberPicker');
-  const isOpen = !kp.classList.contains('hidden');
-  mp.classList.add('hidden');
-  if (isOpen) {
-    kp.classList.add('hidden');
+  const sheet = document.getElementById('keywordSheet');
+  if (sheet.classList.contains('open')) {
+    closeAllSheets();
   } else {
+    closeAllSheets();
     buildKeywordList();
-    kp.classList.remove('hidden');
+    openSheet('keywordSheet');
   }
 };
 
@@ -1066,6 +1147,12 @@ function buildKeywordList() {
     return;
   }
 
+  // 전체 보기 (필터 초기화) 아이템
+  const resetItem = el('div', { className: 'member-item reset-item' });
+  resetItem.appendChild(el('span', { textContent: '↩ 전체 보기' }));
+  resetItem.addEventListener('click', () => applyFilter('all'));
+  listEl.appendChild(resetItem);
+
   displayable.forEach(kw => {
     const isSelected = kw.text === selectedKeyword;
 
@@ -1099,21 +1186,25 @@ function buildKeywordList() {
 // ── 멤버 피커 ─────────────────────────────────────────────────────────────────
 window.toggleMemberPicker = (e) => {
   e?.stopPropagation();
-  const kp = document.getElementById('keywordPicker');
-  const mp = document.getElementById('memberPicker');
-  const isOpen = !mp.classList.contains('hidden');
-  kp.classList.add('hidden');
-  if (isOpen) {
-    mp.classList.add('hidden');
+  const sheet = document.getElementById('memberSheet');
+  if (sheet.classList.contains('open')) {
+    closeAllSheets();
   } else {
+    closeAllSheets();
     buildMemberList();
-    mp.classList.remove('hidden');
+    openSheet('memberSheet');
   }
 };
 
 function buildMemberList() {
   const listEl = document.getElementById('memberList');
   listEl.innerHTML = '';
+
+  // 전체 보기 (필터 초기화) 아이템
+  const resetItem = el('div', { className: 'member-item reset-item' });
+  resetItem.appendChild(el('span', { textContent: '↩ 전체 보기' }));
+  resetItem.addEventListener('click', () => applyFilter('all'));
+  listEl.appendChild(resetItem);
 
   // 내 항목 먼저, 나머지 가나다순
   const members = Object.entries(userMap).sort(([aId, aName], [bId, bName]) => {
@@ -1137,45 +1228,14 @@ function buildMemberList() {
   });
 }
 
-// 피커 외부 클릭 시 닫기
-document.addEventListener('click', e => {
-  const kp = document.getElementById('keywordPicker');
-  const mp = document.getElementById('memberPicker');
-  if (kp && !kp.classList.contains('hidden') && !kp.contains(e.target) && !document.getElementById('filterBtnDate').contains(e.target)) {
-    kp.classList.add('hidden');
-  }
-  if (mp && !mp.classList.contains('hidden') && !mp.contains(e.target) && !document.getElementById('filterBtnMember').contains(e.target)) {
-    mp.classList.add('hidden');
-  }
-});
 
-function closePickers() {
-  document.getElementById('keywordPicker')?.classList.add('hidden');
-  document.getElementById('memberPicker')?.classList.add('hidden');
-}
 
-// ── 활성 칩 ─────────────────────────────────────────────────────────────────
-function renderActiveChip() {
-  const chipEl = document.getElementById('activeChip');
-  chipEl.innerHTML = '';
-  chipEl.classList.add('hidden');
-
-  if (activeFilter === 'date' && selectedKeyword) {
-    chipEl.classList.remove('hidden');
-    chipEl.innerHTML = `<span class="active-filter-chip">${selectedKeyword} <button class="chip-clear" onclick="applyFilter('all')">✕</button></span>`;
-  } else if (activeFilter === 'member' && selectedMemberId) {
-    const name = userMap[selectedMemberId] || '멤버';
-    chipEl.classList.remove('hidden');
-    chipEl.innerHTML = `<span class="active-filter-chip">${name} <button class="chip-clear" onclick="applyFilter('all')">✕</button></span>`;
-  }
-}
 
 // ── 피드 렌더 ─────────────────────────────────────────────────────────────────
 window.renderFeed = () => {
   const feedEl = document.getElementById('feedList');
   if (!feedEl) return;
   feedEl.innerHTML = '';
-  renderActiveChip();
 
   const sorted = [...allPosts]
     .sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
