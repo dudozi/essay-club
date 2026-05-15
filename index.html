@@ -71,7 +71,7 @@
   }
 
   /* 멤버 선택 드롭다운 */
-  .member-list { display:flex; flex-direction:column; gap:6px; max-height:240px; overflow-y:auto; }
+  .member-list { display:flex; flex-direction:column; gap:6px; max-height:320px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
   .member-item {
     display:flex; align-items:center; gap:10px;
     padding:10px 12px; border:2px solid #DDD; border-radius:12px;
@@ -1028,24 +1028,34 @@ function buildKeywordList() {
   const listEl = document.getElementById('keywordList');
   listEl.innerHTML = '';
 
-  // allKeywords에서 글감별로, 공개 날짜 내림차순 정렬
-  // allKeywords: [{ id, text, datetime, batchId }, ...]
-  const sorted = [...allKeywords].sort((a, b) => {
-    const da = a.datetime || '';
-    const db2 = b.datetime || '';
-    return db2.localeCompare(da); // 최신 글감 먼저
+  // 현재 시각 기준 nowISO
+  const _now = new Date();
+  const _pad = n => String(n).padStart(2, '0');
+  const nowISO = `${_now.getFullYear()}-${_pad(_now.getMonth()+1)}-${_pad(_now.getDate())}T${_pad(_now.getHours())}:${_pad(_now.getMinutes())}`;
+
+  // 미래 글감 제거 (어드민 포함 모두에게) — 공개 시각이 지난 것만 표시
+  const visibleKeywords = allKeywords.filter(kw => {
+    if (!kw.datetime) return true; // datetime 없는 경우 허용
+    return kw.datetime <= nowISO;
   });
 
-  // 글감 텍스트 기준으로 실제 글이 있는 것만 표시
+  // 최신순 정렬
+  const sorted = [...visibleKeywords].sort((a, b) =>
+    (b.datetime || '').localeCompare(a.datetime || '')
+  );
+
+  // 글이 있는 글감 세트
   const keywordsWithPosts = new Set(allPosts.map(p => p.keyword).filter(Boolean));
 
-  if (sorted.length === 0) {
-    listEl.appendChild(el('div', { style:{color:'#999',fontSize:'13px',padding:'8px 0'}, textContent:'등록된 글감이 없습니다.' }));
+  // 글이 있는 글감만 표시 (글 없는 과거 글감은 숨김)
+  const displayable = sorted.filter(kw => keywordsWithPosts.has(kw.text));
+
+  if (displayable.length === 0) {
+    listEl.appendChild(el('div', { style:{color:'#999',fontSize:'13px',padding:'8px 0'}, textContent:'아직 글이 올라온 글감이 없어요.' }));
     return;
   }
 
-  sorted.forEach(kw => {
-    const hasPosts = keywordsWithPosts.has(kw.text);
+  displayable.forEach(kw => {
     const isSelected = kw.text === selectedKeyword;
 
     // 날짜 라벨 파싱 (datetime: "YYYY-MM-DDTHH:MM")
@@ -1056,7 +1066,6 @@ function buildKeywordList() {
     }
 
     const item = el('div', { className: 'member-item' + (isSelected ? ' selected' : '') });
-    if (!hasPosts) item.style.opacity = '0.4';
 
     const textWrap = el('div', { style: { flex:'1', minWidth:'0' } });
     const kwText = el('div', { style: { fontWeight:'800', fontSize:'13px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }, textContent: kw.text });
@@ -1065,14 +1074,13 @@ function buildKeywordList() {
     textWrap.appendChild(kwDate);
     item.appendChild(textWrap);
 
-    if (hasPosts) {
-      const count = allPosts.filter(p => p.keyword === kw.text).length;
-      item.appendChild(el('span', { style:{ fontSize:'11px', fontWeight:'700', flexShrink:'0' }, textContent: `${count}편` }));
-      item.addEventListener('click', () => {
-        selectedKeyword = kw.text;
-        applyFilter('date', kw.text);
-      });
-    }
+    const count = allPosts.filter(p => p.keyword === kw.text).length;
+    item.appendChild(el('span', { style:{ fontSize:'11px', fontWeight:'700', flexShrink:'0' }, textContent: `${count}편` }));
+    item.addEventListener('click', () => {
+      selectedKeyword = kw.text;
+      applyFilter('date', kw.text);
+    });
+
     listEl.appendChild(item);
   });
 }
