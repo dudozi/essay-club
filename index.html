@@ -50,20 +50,18 @@
   .keyword-tag { display: inline-block; background: #f0f0f0; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; margin-bottom: 12px; border: 1px solid #DDD; }
   .already-submitted-banner { background: #f0f0f0; border: 2px solid #111; border-radius: 16px; padding: 20px; text-align: center; font-weight: 700; margin-top: 20px; }
 
-  /* 피드 필터 바 */
-  .feed-filter-bar { display:flex; gap:8px; padding:0 0 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .feed-filter-bar::-webkit-scrollbar { display: none; }
+  /* 피드 필터 바 (원래대로 고정형 복구) */
+  .feed-filter-bar { display: flex; gap: 6px; padding: 0 0 14px; width: 100%; justify-content: space-between; }
   .feed-filter-btn {
-    display:flex; align-items:center; gap:5px;
-    padding:8px 14px; border:2px solid #111; border-radius:100px;
-    font-size:12px; font-weight:700; background:#FFF; color:#111;
-    cursor:pointer; white-space:nowrap; transition:all 0.15s;
-    flex-shrink:0;
+    display: flex; align-items: center; justify-content: center; gap: 4px; flex: 1;
+    padding: 8px 0; border: 2px solid #111; border-radius: 100px;
+    font-size: 11px; font-weight: 700; background: #FFF; color: #111;
+    cursor: pointer; transition: all 0.15s;
   }
-  .feed-filter-btn.active { background:#111; color:#FFF; }
-  .feed-filter-btn .icon { font-size:13px; }
+  .feed-filter-btn.active { background: #111; color: #FFF; }
+  .feed-filter-btn .icon { font-size: 12px; }
 
-  /* ── 바텀 시트 ── */
+  /* ── 바텀 시트 스크롤 버그 수정 ── */
   .sheet-overlay {
     position: fixed; inset: 0;
     background: rgba(0,0,0,0.45);
@@ -80,7 +78,7 @@
     border-radius: 24px 24px 0 0;
     box-shadow: 0 -8px 40px rgba(0,0,0,0.18);
     transition: bottom 0.35s cubic-bezier(0.32, 0.72, 0, 1);
-    max-height: 75svh;
+    max-height: 60svh; /* 화면의 60% 안에서만 시트가 열리도록 제한 */
     display: flex; flex-direction: column;
   }
   .bottom-sheet.open { bottom: 0; }
@@ -101,33 +99,36 @@
     display: flex; align-items: center; justify-content: center;
     width: 28px; height: 28px;
   }
+  /* 스크롤 영역 활성화 고정 */
   .sheet-body {
-    overflow-y: auto; -webkit-overflow-scrolling: touch;
-    padding: 10px 16px calc(24px + env(safe-area-inset-bottom)); flex: 1;
+    overflow-y: auto !important; 
+    -webkit-overflow-scrolling: touch;
+    padding: 10px 16px calc(24px + env(safe-area-inset-bottom)); 
+    flex: 1;
   }
 
   /* 멤버/글감 선택 리스트 */
-  .member-list { display:flex; flex-direction:column; gap:6px; }
+  .member-list { display: flex; flex-direction: column; gap: 6px; }
   .member-item {
-    display:flex; align-items:center; gap:10px;
-    padding:12px 14px; border:2px solid #E8E8E8; border-radius:14px;
-    cursor:pointer; font-size:13px; font-weight:700;
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; border: 2px solid #E8E8E8; border-radius: 14px;
+    cursor: pointer; font-size: 13px; font-weight: 700;
     transition: all 0.15s;
   }
   .member-item:active { transform: scale(0.98); }
-  .member-item:hover { border-color:#111; }
-  .member-item.selected { border-color:#111; background:#111; color:#FFF; }
+  .member-item:hover { border-color: #111; }
+  .member-item.selected { border-color: #111; background: #111; color: #FFF; }
   .member-avatar {
-    width:28px; height:28px; border-radius:50%;
-    background:#111; color:#FFF;
-    display:flex; align-items:center; justify-content:center;
-    font-size:11px; font-weight:800; flex-shrink:0;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #111; color: #FFF;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800; flex-shrink: 0;
   }
-  .member-item.selected .member-avatar { background:#FFF; color:#111; }
+  .member-item.selected .member-avatar { background: #FFF; color: #111; }
 
-  .feed-section-header { padding:10px 0 8px; margin:16px 0 8px; border-bottom:2px solid #111; }
-  .feed-section-keyword { font-size:15px; font-weight:800; }
-  .feed-section-count { font-size:12px; color:#999; margin-top:2px; }
+  .feed-section-header { padding: 10px 0 8px; margin: 16px 0 8px; border-bottom: 2px solid #111; }
+  .feed-section-keyword { font-size: 15px; font-weight: 800; }
+  .feed-section-count { font-size: 12px; color: #999; margin-top: 2px; }
 
   /* 피드 카드 본문 접힘 */
   .feed-body {
@@ -183,12 +184,14 @@
 <body>
 <div class="app">
 
+  <!-- ── 메인 UI ── -->
   <div id="mainUI" class="hidden" style="flex-direction:column; height:100%;">
     <div class="header">
       <h1 id="mainTitle">에세이 클럽</h1>
       <div id="myCircle" class="mini-profile">?</div>
     </div>
 
+    <!-- 오늘 탭 -->
     <div class="content" id="tab-today">
       <div style="padding:40px 0 20px; border-bottom:2px solid #111; margin-bottom:30px; display:flex; justify-content:space-between; align-items:center;">
         <h2 id="dynamicWelcome" style="font-size:24px; font-weight:400; line-height:1.4; margin:0;">반가워요!</h2>
@@ -201,6 +204,7 @@
       <div id="statusList" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;"></div>
     </div>
 
+    <!-- 쓰기 탭 -->
     <div class="content hidden" id="tab-write">
       <div style="padding-top:20px;">
         <div style="background:#f9f9f9; padding:15px; border-radius:15px; margin-bottom:20px;">
@@ -223,10 +227,12 @@
       </div>
     </div>
 
+    <!-- 피드 탭 -->
     <div class="content hidden" id="tab-feed">
       <div style="padding-top:20px;">
         <h2 style="font-weight:800; margin:0 0 14px;">피드</h2>
 
+        <!-- 필터 버튼 바 (고정 간격 레이아웃) -->
         <div class="feed-filter-bar" id="feedFilterBar">
           <button class="feed-filter-btn active" id="filterBtnAll" onclick="applyFilter('all')">
             전체
@@ -253,6 +259,7 @@
     </div>
   </div>
 
+  <!-- 글 수정 모달 -->
   <div id="editPostModal" class="modal-overlay hidden">
     <div class="edit-container">
       <h2 style="font-weight:800; margin-bottom:20px;">에세이 수정</h2>
@@ -263,6 +270,7 @@
     </div>
   </div>
 
+  <!-- 어드민: 글감 관리 모달 -->
   <div id="adminModal" class="modal-overlay hidden">
     <div class="edit-container">
       <h2 style="font-weight:800; margin-bottom:4px;">글감 관리</h2>
@@ -283,8 +291,10 @@
     </div>
   </div>
 
+  <!-- 바텀 시트 오버레이 (공통) -->
   <div class="sheet-overlay" id="sheetOverlay" onclick="closeAllSheets()"></div>
 
+  <!-- 글감별 바텀 시트 (내부 스크롤 버그 수정완료) -->
   <div class="bottom-sheet" id="keywordSheet">
     <div class="sheet-handle-bar"></div>
     <div class="sheet-header">
@@ -296,6 +306,7 @@
     </div>
   </div>
 
+  <!-- 멤버별 바텀 시트 (내부 스크롤 버그 수정완료) -->
   <div class="bottom-sheet" id="memberSheet">
     <div class="sheet-handle-bar"></div>
     <div class="sheet-header">
@@ -307,6 +318,7 @@
     </div>
   </div>
 
+  <!-- 기수 전환 사이드 패널 -->
   <div class="batch-panel-overlay" id="batchOverlay" onclick="closeBatchPanel()"></div>
   <div class="batch-panel" id="batchPanel">
     <h3>기수 전환</h3>
@@ -314,8 +326,9 @@
     <button class="batch-panel-close" onclick="closeBatchPanel()">닫기</button>
   </div>
 
+  <!-- ── 인증 모달 ── -->
   <div id="authModal" class="modal-overlay hidden">
-
+    <!-- Step 0: 신규 / 기존 선택 -->
     <div id="authStep0" class="auth-box">
       <h2>Essay Club ✍️</h2>
       <p class="auth-sub">에세이 클럽에 오신 걸 환영해요.<br>해당하는 항목을 선택해주세요.</p>
@@ -324,6 +337,7 @@
       <button id="goReturning" class="btn-outline" style="margin-top:12px;">이미 가입했어요</button>
     </div>
 
+    <!-- Step 1-A: 신규 — 실명 + 참여코드 -->
     <div id="authStepNewReal" class="auth-box hidden">
       <h2>기본 정보 입력</h2>
       <p class="auth-sub">실제 이름과 참여 코드를 입력해주세요.</p>
@@ -334,6 +348,7 @@
       <button id="backToStep0FromReal" class="auth-back">← 뒤로</button>
     </div>
 
+    <!-- Step 1-B: 신규 — 닉네임 -->
     <div id="authStepNewNick" class="auth-box hidden">
       <h2>닉네임 설정</h2>
       <p class="auth-sub">클럽에서 사용할 닉네임을 입력해주세요.<br>나중에 변경이 어려우니 신중하게 정해주세요!</p>
@@ -343,6 +358,7 @@
       <button id="backToStep0FromNew" class="auth-back">← 뒤로</button>
     </div>
 
+    <!-- Step 1-B: 신규 — 비밀번호 설정 -->
     <div id="authStepNewPin" class="auth-box hidden">
       <h2>비밀번호 설정</h2>
       <p class="auth-sub" id="newPinSub">비밀번호 숫자 4자리를 설정해주세요.</p>
@@ -352,6 +368,7 @@
       <button id="backToNewNick" class="auth-back">← 닉네임 다시 입력</button>
     </div>
 
+    <!-- Step 2-A: 기존 — 닉네임 -->
     <div id="authStepRetNick" class="auth-box hidden">
       <h2>닉네임 입력</h2>
       <p class="auth-sub">닉네임을 입력해주세요.</p>
@@ -361,6 +378,7 @@
       <button id="backToStep0FromRet" class="auth-back">← 뒤로</button>
     </div>
 
+    <!-- Step 2-B: 기존 — 비밀번호 확인 -->
     <div id="authStepRetPin" class="auth-box hidden">
       <h2>비밀번호 입력</h2>
       <p class="auth-sub" id="retPinSub">비밀번호 숫자 4자리를 입력해주세요.</p>
@@ -369,7 +387,6 @@
       <button id="retPinBtn" class="btn-next">로그인</button>
       <button id="backToRetNick" class="auth-back">← 닉네임 다시 입력</button>
     </div>
-
   </div>
 </div>
 
@@ -399,22 +416,19 @@ let allPosts       = [];
 let allKeywords    = [];
 let userMap        = {};
 let todaySubmitted = false;
-let currentKeywordDatetime = null; // 현재 글감 공개 시각
+let currentKeywordDatetime = null; 
 let currentEditId  = null;
 let profilesUnsub  = null;
 let postsUnsub     = null;
 let keywordsUnsub  = null;
 
-// 신규 가입 흐름에서 닉네임을 임시 보관
 let pendingNewNick  = null;
 let pendingRealName = null;
 let pendingBatchId  = null;
 
-// 참여 코드 → batchId 매핑
 const BATCH_CODES = { 'MOLE0': '0', 'MOLE01': '1' };
 const BATCH_LABELS = { 'pilot': '파일럿 1차', '0': '파일럿 2차', '1': '정식 1기' };
 
-// ── 유틸 ─────────────────────────────────────────────────────────────────────
 const pad = n => String(n).padStart(2, '0');
 const getTodayISO = () => {
   const d = new Date();
@@ -802,13 +816,7 @@ function subscribeKeywords() {
   const nowISO = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
   if (isFriMidnightToSat7) {
-    const q = query(
-      collection(db, 'keywords'),
-      where('batchId', '==', currentBatch),
-      where('datetime', '<=', nowISO),
-      orderBy('datetime', 'desc'),
-      limit(1)
-    );
+    const q = query(collection(db, 'keywords'), where('batchId', '==', currentBatch), where('datetime', '<=', nowISO), orderBy('datetime', 'desc'), limit(1));
     keywordsUnsub = onSnapshot(q, snap => {
       if (snap.empty) {
         document.getElementById('dispKeyword').textContent = '없음';
@@ -901,15 +909,11 @@ function resubscribePosts() {
 
 async function scheduleNextKeywordRefresh() {
   if (kwRefreshTimer) clearTimeout(kwRefreshTimer);
-
   const now = new Date();
   const nowISO = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
   try {
-    const snap = await getDocs(
-      query(collection(db, 'keywords'), where('batchId', '==', currentBatch), where('datetime', '>', nowISO), orderBy('datetime', 'asc'), limit(1))
-    );
-
+    const snap = await getDocs(query(collection(db, 'keywords'), where('batchId', '==', currentBatch), where('datetime', '>', nowISO), orderBy('datetime', 'asc'), limit(1)));
     if (!snap.empty) {
       const nextDatetime = snap.docs[0].data().datetime;
       const nextDate     = new Date(nextDatetime);
@@ -930,6 +934,7 @@ async function scheduleNextKeywordRefresh() {
 // ── 오늘 탭 ──────────────────────────────────────────────────────────────────
 function renderStatusAndWelcome(doneIds = new Set()) {
   const welcomeEl = document.getElementById('dynamicWelcome');
+  if (!welcomeEl) return;
   welcomeEl.innerHTML = '';
   const boldEl = el('b', { textContent: myName });
 
@@ -985,7 +990,6 @@ window.applyFilter = (type, payload) => {
     selectedKeyword  = null;
     selectedMemberId = null;
   }
-
   renderFeed();
 };
 
@@ -1003,7 +1007,8 @@ function updateFilterButtons() {
 function openSheet(sheetId) {
   document.getElementById('sheetOverlay').classList.add('open');
   document.getElementById(sheetId).classList.add('open');
-  document.body.style.overflow = 'hidden';
+  // 메인 스크롤은 잠그고 바텀 시트 안만 스크롤되도록 처리
+  document.body.style.overflow = 'hidden'; 
 }
 
 window.closeAllSheets = () => {
@@ -1057,7 +1062,6 @@ function buildKeywordList() {
 
   displayable.forEach(kw => {
     const isSelected = kw.text === selectedKeyword && activeFilter === 'keyword';
-
     let dateLabel = '';
     if (kw.datetime) {
       const parts = kw.datetime.split('T')[0].split('-');
@@ -1065,10 +1069,10 @@ function buildKeywordList() {
     }
 
     const item = el('div', { className: 'member-item' + (isSelected ? ' selected' : '') });
-
     const textWrap = el('div', { style: { flex:'1', minWidth:'0' } });
     const kwText = el('div', { style: { fontWeight:'800', fontSize:'13px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }, textContent: kw.text });
     const kwDate = el('div', { style: { fontSize:'11px', marginTop:'2px', opacity:'0.6' }, textContent: dateLabel });
+    
     textWrap.appendChild(kwText);
     textWrap.appendChild(kwDate);
     item.appendChild(textWrap);
@@ -1126,8 +1130,7 @@ window.renderFeed = () => {
   if (!feedEl) return;
   feedEl.innerHTML = '';
 
-  const sorted = [...allPosts]
-    .sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
+  const sorted = [...allPosts].sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
 
   if (activeFilter === 'all') {
     const posts = sorted.slice(0, 50);
@@ -1135,9 +1138,6 @@ window.renderFeed = () => {
       feedEl.appendChild(emptyState('아직 올라온 글이 없어요'));
     } else {
       posts.forEach(p => feedEl.appendChild(buildFeedCard(p)));
-    }
-    if (sorted.length > 50) {
-      feedEl.appendChild(el('div', { style:{textAlign:'center',padding:'16px',color:'#999',fontSize:'13px'}, textContent:`최근 50개만 표시됩니다. (전체 ${sorted.length}개)` }));
     }
     return;
   }
@@ -1171,15 +1171,11 @@ window.renderFeed = () => {
     }
     return;
   }
-
-  sorted.slice(0, 50).forEach(p => feedEl.appendChild(buildFeedCard(p)));
 };
 
 function emptyState(text) {
   return el('div', { style:{textAlign:'center',padding:'48px 0',color:'#999',fontSize:'14px'}, textContent: text });
 }
-
-window.setFeedView = (view) => applyFilter(view === 'date' ? 'all' : view);
 
 // ── 피드 카드 생성 ────────────────────────────────────────────────────────────
 function buildFeedCard(p) {
@@ -1190,7 +1186,7 @@ function buildFeedCard(p) {
   const card = el('div', { className: 'feed-card' });
   card.appendChild(el('div', { className: 'keyword-tag', textContent: `# ${p.keyword || '글감'}` }));
 
-  const headerRow = el('div', { style: { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'4px' } });
+  const headerRow = el('div', { style: { display:'flex', justifycontent:'space-between', alignitems:'center', marginbottom:'4px' } });
   headerRow.appendChild(el('b', { textContent: name }));
 
   const btnWrap = el('div', { style: { display:'flex', gap:'10px' } });
