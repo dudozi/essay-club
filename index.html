@@ -69,20 +69,6 @@
     padding:16px; box-shadow:6px 6px 0 #111;
     min-width:260px;
   }
-  .cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
-  .cal-nav { background:none; border:none; font-size:18px; cursor:pointer; padding:4px 8px; font-weight:800; }
-  .cal-month { font-size:14px; font-weight:800; }
-  .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
-  .cal-day-label { text-align:center; font-size:10px; font-weight:700; color:#999; padding:4px 0; }
-  .cal-day {
-    text-align:center; padding:7px 4px; font-size:12px; font-weight:600;
-    border-radius:8px; cursor:pointer; border:none; background:none;
-  }
-  .cal-day:hover { background:#f0f0f0; }
-  .cal-day.has-post { background:#f0f0f0; font-weight:800; }
-  .cal-day.selected { background:#111; color:#FFF; }
-  .cal-day.empty { cursor:default; }
-  .cal-day.today { outline:2px solid #111; outline-offset:-2px; }
 
   /* 멤버 선택 드롭다운 */
   .member-list { display:flex; flex-direction:column; gap:6px; max-height:240px; overflow-y:auto; }
@@ -199,8 +185,9 @@
         <div id="writeForm">
           <input id="postTitle" type="text" placeholder="제목">
           <textarea id="postText" style="height:300px;" placeholder="생각을 채워주세요."></textarea>
-          <div style="text-align:left; font-size:12px; color:#999; margin:-6px 0 12px 4px;">
-            <span id="charCount">0</span>자 / 1000자 (공백포함)
+          <div style="display:flex; justify-content:space-between; align-items:center; margin:-6px 0 12px 0;">
+            <span style="font-size:12px; color:#999; margin-left:4px;"><span id="charCount">0</span>자 / 1000자 (공백포함)</span>
+            <span id="autosaveStatus" style="font-size:11px; color:#bbb;"></span>
           </div>
           <label class="private-wrap"><input type="checkbox" id="isPrivate"> <span>비밀글로 업로드</span></label>
           <button id="submitBtn" class="btn-next" style="opacity:0.3;" disabled>제출하기</button>
@@ -225,7 +212,7 @@
           <button class="feed-filter-btn" id="filterBtnMine" onclick="applyFilter('mine')">
             <span class="icon">✍️</span> 내 글만
           </button>
-          <button class="feed-filter-btn" id="filterBtnDate" onclick="toggleDatePicker(event)">
+          <button class="feed-filter-btn" id="filterBtnDate" onclick="toggleKeywordPicker(event)">
             <span class="icon">📅</span> 날짜별
           </button>
           <button class="feed-filter-btn" id="filterBtnMember" onclick="toggleMemberPicker(event)">
@@ -233,14 +220,10 @@
           </button>
         </div>
 
-        <!-- 날짜 달력 -->
-        <div id="datePicker" class="feed-dropdown hidden" style="margin-bottom:12px;">
-          <div class="cal-header">
-            <button class="cal-nav" id="calPrev">&#8249;</button>
-            <span class="cal-month" id="calMonthLabel"></span>
-            <button class="cal-nav" id="calNext">&#8250;</button>
-          </div>
-          <div class="cal-grid" id="calGrid"></div>
+        <!-- 글감별 피커 -->
+        <div id="keywordPicker" class="feed-dropdown hidden" style="margin-bottom:12px;">
+          <div style="font-size:11px; font-weight:800; color:#999; margin-bottom:8px; letter-spacing:0.05em;">글감 선택</div>
+          <div class="member-list" id="keywordList"></div>
         </div>
 
         <!-- 멤버 선택 드롭다운 -->
@@ -428,7 +411,7 @@ const isAfterCurrentKeyword = ts => {
   if (!currentKeywordDatetime) return isSameDay(ts); // 글감 없으면 날짜 기준 fallback
   return ts.toDate() >= new Date(currentKeywordDatetime);
 };
-const getIsWeekend = () => { const d = new Date().getDay(); return d === 0 || d === 6; };
+// getIsWeekend 제거 — shouldHideKeyword()로 통일
 
 function el(tag, props = {}, children = []) {
   const node = document.createElement(tag);
@@ -457,6 +440,8 @@ window.switchTab = id => {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + id).classList.remove('hidden');
   document.getElementById('btn-' + id)?.classList.add('active');
+  // 쓰기 탭 진입 시 임시저장된 내용 복원
+  if (id === 'write' && !todaySubmitted) restoreDraft();
 };
 window.toggleModal = (id, show) =>
   document.getElementById(id).classList.toggle('hidden', !show);
@@ -750,6 +735,10 @@ function startApp() {
       document.getElementById('alreadySubmitted').classList.toggle('hidden', !todaySubmitted);
       renderStatusAndWelcome(doneIds);
       renderFeed();
+
+      // 금~토 자정 전환 구간이면 제출 여부에 따라 글감 표시 재동기화
+      const _d = new Date(); const _day = _d.getDay(); const _h = _d.getHours();
+      if (_day === 6 && _h < 7) subscribeKeywords();
     });
   });
 
@@ -763,6 +752,9 @@ function startApp() {
   });
 
   scheduleNextKeywordRefresh();
+
+  // 앱 시작 시 임시저장 내용 복원 (미제출 상태일 때만)
+  if (!todaySubmitted) restoreDraft();
 }
 
 // ── 주말 글감 숨김 판단 ──────────────────────────────────────────────────────
@@ -781,18 +773,55 @@ function shouldHideKeyword() {
 function subscribeKeywords() {
   if (keywordsUnsub) keywordsUnsub();
 
-  // 주말 구간이면 글감 숨김
+  // 토 07:00 ~ 월 07:00 → 완전한 주말 구간: 모두에게 글감 숨김
   if (shouldHideKeyword()) {
-    document.getElementById('dispKeyword').textContent = '주말은 쉬어갑니다 🌿';
+    document.getElementById('dispKeyword').textContent = '없음';
     document.getElementById('writeTabKeyword').textContent = '주말 휴식';
     return;
   }
 
-  // toISOString()은 UTC 기준이라 한국(UTC+9)에서 9시간 차이 발생
-  // 로컬 시각 기준 "YYYY-MM-DDTHH:MM" 문자열 직접 생성
+  // 금요일 밤 자정 ~ 토요일 07:00 구간 판별
+  // (shouldHideKeyword = false 이므로 이 구간은 토요일 day===6 && hour<7 인 경우)
   const now = new Date();
-  const pad = n => String(n).padStart(2, '0');
+  const day  = now.getDay();
+  const hour = now.getHours();
+  const isFriMidnightToSat7 = (day === 6 && hour < 7);
+
   const nowISO = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+  if (isFriMidnightToSat7) {
+    // 이 구간에서는 가장 최근 글감(금요일 글감)을 조회
+    // 제출한 사람 → "없음" 표시 / 미제출 사람 → 금요일 글감 계속 표시
+    const q = query(
+      collection(db, 'keywords'),
+      where('batchId', '==', currentBatch),
+      where('datetime', '<=', nowISO),
+      orderBy('datetime', 'desc'),
+      limit(1)
+    );
+    keywordsUnsub = onSnapshot(q, snap => {
+      if (snap.empty) {
+        document.getElementById('dispKeyword').textContent = '없음';
+        document.getElementById('writeTabKeyword').textContent = '글감 없음';
+        return;
+      }
+      const kwData = snap.docs[0].data();
+      currentKeywordDatetime = kwData.datetime || null;
+
+      if (todaySubmitted) {
+        // 이미 제출 완료 → 주말 모드로 표시
+        document.getElementById('dispKeyword').textContent = '없음';
+        document.getElementById('writeTabKeyword').textContent = '주말 휴식';
+      } else {
+        // 미제출 → 금요일 글감 계속 노출
+        document.getElementById('dispKeyword').textContent = kwData.text;
+        document.getElementById('writeTabKeyword').textContent = kwData.text;
+      }
+    });
+    return;
+  }
+
+  // 일반 평일 구간
   keywordsUnsub = onSnapshot(
     query(collection(db, 'keywords'), where('batchId', '==', currentBatch), where('datetime', '<=', nowISO), orderBy('datetime', 'desc'), limit(1)),
     snap => {
@@ -860,6 +889,10 @@ function resubscribePosts() {
     document.getElementById('alreadySubmitted').classList.toggle('hidden', !todaySubmitted);
     renderStatusAndWelcome(doneIds);
     renderFeed();
+
+    // 금~토 자정 전환 구간이면 제출 여부에 따라 글감 표시 재동기화
+    const _d = new Date(); const _day = _d.getDay(); const _h = _d.getHours();
+    if (_day === 6 && _h < 7) subscribeKeywords();
   });
 }
 
@@ -907,12 +940,23 @@ function renderStatusAndWelcome(doneIds = new Set()) {
   const welcomeEl = document.getElementById('dynamicWelcome');
   welcomeEl.innerHTML = '';
   const boldEl = el('b', { textContent: myName });
-  let restText;
-  if (getIsWeekend())         restText = '님, 주말은 클럽도\n쉬어갑니다. 푹 쉬세요!';
-  else if (doneIds.has(myId)) restText = '님의 생각이\n차곡 쌓였어요';
-  else                        restText = '님, 오늘의 생각을\n붙잡아 보세요!';
+
+  let line1, line2;
+  if (shouldHideKeyword()) {
+    line1 = '님, 주말은 클럽도';
+    line2 = '쉬어갑니다. 푹 쉬세요!';
+  } else if (doneIds.has(myId)) {
+    line1 = '님의 생각이';
+    line2 = '차곡 쌓였어요';
+  } else {
+    line1 = '님, 오늘의 생각을';
+    line2 = '붙잡아 보세요!';
+  }
+
   welcomeEl.appendChild(boldEl);
-  welcomeEl.appendChild(document.createTextNode(restText));
+  welcomeEl.appendChild(document.createTextNode(line1));
+  welcomeEl.appendChild(document.createElement('br'));
+  welcomeEl.appendChild(document.createTextNode(line2));
 
   const sList = document.getElementById('statusList');
   if (!sList) return;
@@ -932,12 +976,7 @@ function renderStatusAndWelcome(doneIds = new Set()) {
 
 // ── 피드 필터 상태 ────────────────────────────────────────────────────────────
 let activeFilter     = 'all';   // 'all' | 'mine' | 'date' | 'member'
-let selectedDateStr  = null;    // 'YYYY-MM-DD'
 let selectedMemberId = null;    // uid string
-
-// 달력 상태
-let calYear  = new Date().getFullYear();
-let calMonth = new Date().getMonth(); // 0-indexed
 
 // ── 필터 적용 ─────────────────────────────────────────────────────────────────
 window.applyFilter = (type, payload) => {
@@ -946,11 +985,11 @@ window.applyFilter = (type, payload) => {
   updateFilterButtons();
 
   if (type === 'date' && payload) {
-    selectedDateStr = payload;
+    selectedKeyword = payload;
   } else if (type === 'member' && payload) {
     selectedMemberId = payload;
   } else {
-    selectedDateStr  = null;
+    selectedKeyword  = null;
     selectedMemberId = null;
   }
 
@@ -967,106 +1006,84 @@ function updateFilterButtons() {
   });
 }
 
-// ── 날짜 피커 ─────────────────────────────────────────────────────────────────
-window.toggleDatePicker = (e) => {
+// ── 글감별 피커 ─────────────────────────────────────────────────────────────────
+// selectedKeyword: 선택된 글감 텍스트 (keyword 필드값과 대응)
+let selectedKeyword = null;
+
+window.toggleKeywordPicker = (e) => {
   e?.stopPropagation();
-  const dp = document.getElementById('datePicker');
+  const kp = document.getElementById('keywordPicker');
   const mp = document.getElementById('memberPicker');
-  const isOpen = !dp.classList.contains('hidden');
+  const isOpen = !kp.classList.contains('hidden');
   mp.classList.add('hidden');
   if (isOpen) {
-    dp.classList.add('hidden');
+    kp.classList.add('hidden');
   } else {
-    // 달력을 현재 선택된 날짜 기준으로 초기화
-    if (selectedDateStr) {
-      const parts = selectedDateStr.split('-');
-      calYear = parseInt(parts[0]); calMonth = parseInt(parts[1]) - 1;
-    } else {
-      const now = new Date(); calYear = now.getFullYear(); calMonth = now.getMonth();
-    }
-    buildCalendar();
-    dp.classList.remove('hidden');
+    buildKeywordList();
+    kp.classList.remove('hidden');
   }
 };
 
-function buildCalendar() {
-  const labelEl = document.getElementById('calMonthLabel');
-  const gridEl  = document.getElementById('calGrid');
-  labelEl.textContent = `${calYear}년 ${calMonth + 1}월`;
-  gridEl.innerHTML = '';
+function buildKeywordList() {
+  const listEl = document.getElementById('keywordList');
+  listEl.innerHTML = '';
 
-  // 요일 헤더
-  ['일','월','화','수','목','금','토'].forEach(d => {
-    const cell = el('div', { className: 'cal-day-label', textContent: d });
-    gridEl.appendChild(cell);
+  // allKeywords에서 글감별로, 공개 날짜 내림차순 정렬
+  // allKeywords: [{ id, text, datetime, batchId }, ...]
+  const sorted = [...allKeywords].sort((a, b) => {
+    const da = a.datetime || '';
+    const db2 = b.datetime || '';
+    return db2.localeCompare(da); // 최신 글감 먼저
   });
 
-  // 해당 월에 글 있는 날짜 세트
-  const postDates = new Set();
-  allPosts.forEach(p => {
-    const d = p.createdAt?.toDate();
-    if (!d) return;
-    if (d.getFullYear() === calYear && d.getMonth() === calMonth) {
-      postDates.add(pad(d.getDate()));
-    }
-  });
+  // 글감 텍스트 기준으로 실제 글이 있는 것만 표시
+  const keywordsWithPosts = new Set(allPosts.map(p => p.keyword).filter(Boolean));
 
-  const firstDay = new Date(calYear, calMonth, 1).getDay();
-  const lastDate = new Date(calYear, calMonth + 1, 0).getDate();
-  const todayISO = getTodayISO();
-
-  // 빈 칸
-  for (let i = 0; i < firstDay; i++) {
-    gridEl.appendChild(el('div', { className: 'cal-day empty' }));
+  if (sorted.length === 0) {
+    listEl.appendChild(el('div', { style:{color:'#999',fontSize:'13px',padding:'8px 0'}, textContent:'등록된 글감이 없습니다.' }));
+    return;
   }
 
-  for (let d = 1; d <= lastDate; d++) {
-    const dayStr   = pad(d);
-    const dateISO  = `${calYear}-${pad(calMonth+1)}-${dayStr}`;
-    const hasPost  = postDates.has(dayStr);
-    const isToday  = dateISO === todayISO;
-    const isSelected = dateISO === selectedDateStr;
+  sorted.forEach(kw => {
+    const hasPosts = keywordsWithPosts.has(kw.text);
+    const isSelected = kw.text === selectedKeyword;
 
-    let cls = 'cal-day';
-    if (hasPost)   cls += ' has-post';
-    if (isToday)   cls += ' today';
-    if (isSelected) cls += ' selected';
+    // 날짜 라벨 파싱 (datetime: "YYYY-MM-DDTHH:MM")
+    let dateLabel = '';
+    if (kw.datetime) {
+      const parts = kw.datetime.split('T')[0].split('-');
+      dateLabel = `${parseInt(parts[1])}월 ${parseInt(parts[2])}일`;
+    }
 
-    const btn = el('button', { className: cls, textContent: String(d) });
+    const item = el('div', { className: 'member-item' + (isSelected ? ' selected' : '') });
+    if (!hasPosts) item.style.opacity = '0.4';
 
-    if (hasPost || isToday) {
-      btn.addEventListener('click', () => {
-        selectedDateStr = dateISO;
-        applyFilter('date', dateISO);
+    const textWrap = el('div', { style: { flex:'1', minWidth:'0' } });
+    const kwText = el('div', { style: { fontWeight:'800', fontSize:'13px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }, textContent: kw.text });
+    const kwDate = el('div', { style: { fontSize:'11px', marginTop:'2px', opacity:'0.6' }, textContent: dateLabel });
+    textWrap.appendChild(kwText);
+    textWrap.appendChild(kwDate);
+    item.appendChild(textWrap);
+
+    if (hasPosts) {
+      const count = allPosts.filter(p => p.keyword === kw.text).length;
+      item.appendChild(el('span', { style:{ fontSize:'11px', fontWeight:'700', flexShrink:'0' }, textContent: `${count}편` }));
+      item.addEventListener('click', () => {
+        selectedKeyword = kw.text;
+        applyFilter('date', kw.text);
       });
-    } else {
-      btn.style.opacity = '0.35';
-      btn.style.cursor = 'default';
     }
-    gridEl.appendChild(btn);
-  }
+    listEl.appendChild(item);
+  });
 }
-
-document.getElementById('calPrev').addEventListener('click', e => {
-  e.stopPropagation();
-  calMonth--;
-  if (calMonth < 0) { calMonth = 11; calYear--; }
-  buildCalendar();
-});
-document.getElementById('calNext').addEventListener('click', e => {
-  e.stopPropagation();
-  calMonth++;
-  if (calMonth > 11) { calMonth = 0; calYear++; }
-  buildCalendar();
-});
 
 // ── 멤버 피커 ─────────────────────────────────────────────────────────────────
 window.toggleMemberPicker = (e) => {
   e?.stopPropagation();
-  const dp = document.getElementById('datePicker');
+  const kp = document.getElementById('keywordPicker');
   const mp = document.getElementById('memberPicker');
   const isOpen = !mp.classList.contains('hidden');
-  dp.classList.add('hidden');
+  kp.classList.add('hidden');
   if (isOpen) {
     mp.classList.add('hidden');
   } else {
@@ -1103,10 +1120,10 @@ function buildMemberList() {
 
 // 피커 외부 클릭 시 닫기
 document.addEventListener('click', e => {
-  const dp = document.getElementById('datePicker');
+  const kp = document.getElementById('keywordPicker');
   const mp = document.getElementById('memberPicker');
-  if (dp && !dp.classList.contains('hidden') && !dp.contains(e.target) && !document.getElementById('filterBtnDate').contains(e.target)) {
-    dp.classList.add('hidden');
+  if (kp && !kp.classList.contains('hidden') && !kp.contains(e.target) && !document.getElementById('filterBtnDate').contains(e.target)) {
+    kp.classList.add('hidden');
   }
   if (mp && !mp.classList.contains('hidden') && !mp.contains(e.target) && !document.getElementById('filterBtnMember').contains(e.target)) {
     mp.classList.add('hidden');
@@ -1114,7 +1131,7 @@ document.addEventListener('click', e => {
 });
 
 function closePickers() {
-  document.getElementById('datePicker')?.classList.add('hidden');
+  document.getElementById('keywordPicker')?.classList.add('hidden');
   document.getElementById('memberPicker')?.classList.add('hidden');
 }
 
@@ -1124,11 +1141,9 @@ function renderActiveChip() {
   chipEl.innerHTML = '';
   chipEl.classList.add('hidden');
 
-  if (activeFilter === 'date' && selectedDateStr) {
-    const [y, m, d] = selectedDateStr.split('-');
-    const label = `${parseInt(m)}월 ${parseInt(d)}일`;
+  if (activeFilter === 'date' && selectedKeyword) {
     chipEl.classList.remove('hidden');
-    chipEl.innerHTML = `<span class="active-filter-chip">${label} <button class="chip-clear" onclick="applyFilter('all')">✕</button></span>`;
+    chipEl.innerHTML = `<span class="active-filter-chip">${selectedKeyword} <button class="chip-clear" onclick="applyFilter('all')">✕</button></span>`;
   } else if (activeFilter === 'member' && selectedMemberId) {
     const name = userMap[selectedMemberId] || '멤버';
     chipEl.classList.remove('hidden');
@@ -1171,15 +1186,11 @@ window.renderFeed = () => {
     return;
   }
 
-  // ── 날짜 필터 ───────────────────────────────────────────────────
-  if (activeFilter === 'date' && selectedDateStr) {
-    const filtered = sorted.filter(p => {
-      const d = p.createdAt?.toDate();
-      if (!d) return false;
-      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}` === selectedDateStr;
-    });
+  // ── 글감별 필터 (keyword 필드 기준) ────────────────────────────
+  if (activeFilter === 'date' && selectedKeyword) {
+    const filtered = sorted.filter(p => p.keyword === selectedKeyword);
     if (filtered.length === 0) {
-      feedEl.appendChild(emptyState('해당 날짜에 올라온 글이 없어요'));
+      feedEl.appendChild(emptyState('해당 글감에 올라온 글이 없어요'));
     } else {
       filtered.forEach(p => feedEl.appendChild(buildFeedCard(p)));
     }
@@ -1289,6 +1300,53 @@ document.getElementById('saveEditBtn').addEventListener('click', async () => {
 });
 
 // ── 글 제출 ──────────────────────────────────────────────────────────────────
+// ── 임시저장 (Auto-save) ──────────────────────────────────────────────────────
+const DRAFT_KEY_TEXT  = 'essay_draft_text';
+const DRAFT_KEY_TITLE = 'essay_draft_title';
+let autosaveTimer = null;
+
+function saveDraft() {
+  const title = document.getElementById('postTitle')?.value || '';
+  const text  = document.getElementById('postText')?.value  || '';
+  localStorage.setItem(DRAFT_KEY_TITLE, title);
+  localStorage.setItem(DRAFT_KEY_TEXT,  text);
+  showAutosaveStatus('임시저장 됨');
+}
+
+function clearDraft() {
+  localStorage.removeItem(DRAFT_KEY_TITLE);
+  localStorage.removeItem(DRAFT_KEY_TEXT);
+}
+
+function restoreDraft() {
+  const title = localStorage.getItem(DRAFT_KEY_TITLE);
+  const text  = localStorage.getItem(DRAFT_KEY_TEXT);
+  if (!title && !text) return;
+
+  const titleEl = document.getElementById('postTitle');
+  const textEl  = document.getElementById('postText');
+  if (titleEl && title) titleEl.value = title;
+  if (textEl  && text)  {
+    textEl.value = text;
+    // 글자수 및 버튼 상태 동기화
+    const len = text.length;
+    const trimLen = text.trim().length;
+    const countEl = document.getElementById('charCount');
+    if (countEl) { countEl.textContent = len; countEl.style.color = len > 1000 ? '#ff4d4d' : '#999'; }
+    const btn = document.getElementById('submitBtn');
+    if (btn) { btn.disabled = trimLen === 0; btn.style.opacity = trimLen === 0 ? '0.3' : '1'; }
+  }
+  showAutosaveStatus('임시저장 불러옴');
+}
+
+function showAutosaveStatus(msg) {
+  const el2 = document.getElementById('autosaveStatus');
+  if (!el2) return;
+  el2.textContent = msg;
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(() => { el2.textContent = ''; }, 2500);
+}
+
 document.getElementById('postText')?.addEventListener('input', e => {
   const val = e.target.value;
   const len = val.length;           // 공백 포함 글자수
@@ -1301,6 +1359,15 @@ document.getElementById('postText')?.addEventListener('input', e => {
   const btn = document.getElementById('submitBtn');
   btn.disabled = trimLen === 0;
   btn.style.opacity = trimLen === 0 ? '0.3' : '1';
+
+  // 500ms 디바운스 후 localStorage에 임시저장
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(saveDraft, 500);
+});
+
+document.getElementById('postTitle')?.addEventListener('input', () => {
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(saveDraft, 500);
 });
 document.getElementById('submitBtn').addEventListener('click', async () => {
   if (todaySubmitted) { alert('오늘은 이미 제출하셨습니다!'); return; }
@@ -1319,6 +1386,9 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
       createdAt: serverTimestamp()
     });
     todaySubmitted = true;
+    clearDraft();
+    document.getElementById('postTitle').value = '';
+    document.getElementById('postText').value  = '';
     document.getElementById('writeForm').classList.add('hidden');
     document.getElementById('alreadySubmitted').classList.remove('hidden');
     switchTab('feed');
