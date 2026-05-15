@@ -50,11 +50,68 @@
   .keyword-tag { display: inline-block; background: #f0f0f0; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; margin-bottom: 12px; border: 1px solid #DDD; }
   .already-submitted-banner { background: #f0f0f0; border: 2px solid #111; border-radius: 16px; padding: 20px; text-align: center; font-weight: 700; margin-top: 20px; }
 
-  /* 피드 세그먼트 컨트롤 */
-  .feed-seg { display:flex; border:2px solid #111; border-radius:10px; overflow:hidden; width:100%; }
-  .feed-seg-btn { flex:1; padding:9px 0; font-size:12px; font-weight:700; border:none; background:#FFF; color:#111; cursor:pointer; }
-  .feed-seg-btn + .feed-seg-btn { border-left:2px solid #111; }
-  .feed-seg-btn.active { background:#111; color:#FFF; }
+  /* 피드 필터 바 */
+  .feed-filter-bar { display:flex; gap:8px; padding:0 0 14px; }
+  .feed-filter-btn {
+    display:flex; align-items:center; gap:5px;
+    padding:8px 14px; border:2px solid #111; border-radius:100px;
+    font-size:12px; font-weight:700; background:#FFF; color:#111;
+    cursor:pointer; white-space:nowrap; transition:all 0.15s;
+    flex-shrink:0;
+  }
+  .feed-filter-btn.active { background:#111; color:#FFF; }
+  .feed-filter-btn .icon { font-size:13px; }
+
+  /* 날짜 달력 드롭다운 */
+  .feed-dropdown {
+    position:absolute; z-index:500; background:#FFF;
+    border:2px solid #111; border-radius:16px;
+    padding:16px; box-shadow:6px 6px 0 #111;
+    min-width:260px;
+  }
+  .cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .cal-nav { background:none; border:none; font-size:18px; cursor:pointer; padding:4px 8px; font-weight:800; }
+  .cal-month { font-size:14px; font-weight:800; }
+  .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+  .cal-day-label { text-align:center; font-size:10px; font-weight:700; color:#999; padding:4px 0; }
+  .cal-day {
+    text-align:center; padding:7px 4px; font-size:12px; font-weight:600;
+    border-radius:8px; cursor:pointer; border:none; background:none;
+  }
+  .cal-day:hover { background:#f0f0f0; }
+  .cal-day.has-post { background:#f0f0f0; font-weight:800; }
+  .cal-day.selected { background:#111; color:#FFF; }
+  .cal-day.empty { cursor:default; }
+  .cal-day.today { outline:2px solid #111; outline-offset:-2px; }
+
+  /* 멤버 선택 드롭다운 */
+  .member-list { display:flex; flex-direction:column; gap:6px; max-height:240px; overflow-y:auto; }
+  .member-item {
+    display:flex; align-items:center; gap:10px;
+    padding:10px 12px; border:2px solid #DDD; border-radius:12px;
+    cursor:pointer; font-size:13px; font-weight:700;
+    transition:all 0.1s;
+  }
+  .member-item:hover { border-color:#111; }
+  .member-item.selected { border-color:#111; background:#111; color:#FFF; }
+  .member-avatar {
+    width:28px; height:28px; border-radius:50%;
+    background:#111; color:#FFF;
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:800; flex-shrink:0;
+  }
+  .member-item.selected .member-avatar { background:#FFF; color:#111; }
+
+  /* 활성 필터 칩 */
+  .active-filter-chip {
+    display:inline-flex; align-items:center; gap:6px;
+    background:#111; color:#FFF; border-radius:100px;
+    padding:5px 10px 5px 12px; font-size:12px; font-weight:700; margin-bottom:12px;
+  }
+  .chip-clear { background:rgba(255,255,255,0.25); border:none; border-radius:50%;
+    width:18px; height:18px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; font-size:11px; color:#FFF; padding:0; }
+
   .feed-section-header { padding:10px 0 8px; margin:16px 0 8px; border-bottom:2px solid #111; }
   .feed-section-keyword { font-size:15px; font-weight:800; }
   .feed-section-count { font-size:12px; color:#999; margin-top:2px; }
@@ -158,14 +215,43 @@
     <!-- 피드 탭 -->
     <div class="content hidden" id="tab-feed">
       <div style="padding-top:20px;">
-        <div style="margin-bottom:16px;">
-          <h2 style="font-weight:800; margin:0 12px 0 0;">피드</h2>
-          <div class="feed-seg" style="margin-top:12px;">
-            <button class="feed-seg-btn active" id="feedSegDate" onclick="setFeedView('date')">날짜별</button>
-            <button class="feed-seg-btn" id="feedSegMember" onclick="setFeedView('member')">멤버별</button>
-            <button class="feed-seg-btn" id="feedSegMine" onclick="setFeedView('mine')">내 글</button>
-          </div>
+        <h2 style="font-weight:800; margin:0 0 14px;">피드</h2>
+
+        <!-- 필터 버튼 바 -->
+        <div class="feed-filter-bar" id="feedFilterBar">
+          <button class="feed-filter-btn active" id="filterBtnAll" onclick="applyFilter('all')">
+            전체
+          </button>
+          <button class="feed-filter-btn" id="filterBtnMine" onclick="applyFilter('mine')">
+            <span class="icon">✍️</span> 내 글만
+          </button>
+          <button class="feed-filter-btn" id="filterBtnDate" onclick="toggleDatePicker(event)">
+            <span class="icon">📅</span> 날짜별
+          </button>
+          <button class="feed-filter-btn" id="filterBtnMember" onclick="toggleMemberPicker(event)">
+            <span class="icon">👤</span> 멤버별
+          </button>
         </div>
+
+        <!-- 날짜 달력 -->
+        <div id="datePicker" class="feed-dropdown hidden" style="margin-bottom:12px;">
+          <div class="cal-header">
+            <button class="cal-nav" id="calPrev">&#8249;</button>
+            <span class="cal-month" id="calMonthLabel"></span>
+            <button class="cal-nav" id="calNext">&#8250;</button>
+          </div>
+          <div class="cal-grid" id="calGrid"></div>
+        </div>
+
+        <!-- 멤버 선택 드롭다운 -->
+        <div id="memberPicker" class="feed-dropdown hidden" style="margin-bottom:12px;">
+          <div style="font-size:11px; font-weight:800; color:#999; margin-bottom:8px; letter-spacing:0.05em;">멤버 선택</div>
+          <div class="member-list" id="memberList"></div>
+        </div>
+
+        <!-- 활성 필터 표시 -->
+        <div id="activeChip" class="hidden"></div>
+
         <div id="feedList"></div>
       </div>
     </div>
@@ -311,7 +397,6 @@ let userMap        = {};
 let todaySubmitted = false;
 let currentKeywordDatetime = null; // 현재 글감 공개 시각
 let currentEditId  = null;
-let feedView       = 'date';
 let profilesUnsub  = null;
 let postsUnsub     = null;
 let keywordsUnsub  = null;
@@ -845,92 +930,283 @@ function renderStatusAndWelcome(doneIds = new Set()) {
   });
 }
 
-// ── 피드 ─────────────────────────────────────────────────────────────────────
-window.setFeedView = (view) => {
-  feedView = view;
-  ['Date','Member','Mine'].forEach(v =>
-    document.getElementById('feedSeg' + v).classList.toggle('active', view === v.toLowerCase())
-  );
+// ── 피드 필터 상태 ────────────────────────────────────────────────────────────
+let activeFilter     = 'all';   // 'all' | 'mine' | 'date' | 'member'
+let selectedDateStr  = null;    // 'YYYY-MM-DD'
+let selectedMemberId = null;    // uid string
+
+// 달력 상태
+let calYear  = new Date().getFullYear();
+let calMonth = new Date().getMonth(); // 0-indexed
+
+// ── 필터 적용 ─────────────────────────────────────────────────────────────────
+window.applyFilter = (type, payload) => {
+  activeFilter = type;
+  closePickers();
+  updateFilterButtons();
+
+  if (type === 'date' && payload) {
+    selectedDateStr = payload;
+  } else if (type === 'member' && payload) {
+    selectedMemberId = payload;
+  } else {
+    selectedDateStr  = null;
+    selectedMemberId = null;
+  }
+
   renderFeed();
 };
 
+function updateFilterButtons() {
+  const ids = ['All','Mine','Date','Member'];
+  ids.forEach(id => {
+    const btn = document.getElementById('filterBtn' + id);
+    if (!btn) return;
+    const map = { All:'all', Mine:'mine', Date:'date', Member:'member' };
+    btn.classList.toggle('active', activeFilter === map[id]);
+  });
+}
+
+// ── 날짜 피커 ─────────────────────────────────────────────────────────────────
+window.toggleDatePicker = (e) => {
+  e?.stopPropagation();
+  const dp = document.getElementById('datePicker');
+  const mp = document.getElementById('memberPicker');
+  const isOpen = !dp.classList.contains('hidden');
+  mp.classList.add('hidden');
+  if (isOpen) {
+    dp.classList.add('hidden');
+  } else {
+    // 달력을 현재 선택된 날짜 기준으로 초기화
+    if (selectedDateStr) {
+      const parts = selectedDateStr.split('-');
+      calYear = parseInt(parts[0]); calMonth = parseInt(parts[1]) - 1;
+    } else {
+      const now = new Date(); calYear = now.getFullYear(); calMonth = now.getMonth();
+    }
+    buildCalendar();
+    dp.classList.remove('hidden');
+  }
+};
+
+function buildCalendar() {
+  const labelEl = document.getElementById('calMonthLabel');
+  const gridEl  = document.getElementById('calGrid');
+  labelEl.textContent = `${calYear}년 ${calMonth + 1}월`;
+  gridEl.innerHTML = '';
+
+  // 요일 헤더
+  ['일','월','화','수','목','금','토'].forEach(d => {
+    const cell = el('div', { className: 'cal-day-label', textContent: d });
+    gridEl.appendChild(cell);
+  });
+
+  // 해당 월에 글 있는 날짜 세트
+  const postDates = new Set();
+  allPosts.forEach(p => {
+    const d = p.createdAt?.toDate();
+    if (!d) return;
+    if (d.getFullYear() === calYear && d.getMonth() === calMonth) {
+      postDates.add(pad(d.getDate()));
+    }
+  });
+
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const lastDate = new Date(calYear, calMonth + 1, 0).getDate();
+  const todayISO = getTodayISO();
+
+  // 빈 칸
+  for (let i = 0; i < firstDay; i++) {
+    gridEl.appendChild(el('div', { className: 'cal-day empty' }));
+  }
+
+  for (let d = 1; d <= lastDate; d++) {
+    const dayStr   = pad(d);
+    const dateISO  = `${calYear}-${pad(calMonth+1)}-${dayStr}`;
+    const hasPost  = postDates.has(dayStr);
+    const isToday  = dateISO === todayISO;
+    const isSelected = dateISO === selectedDateStr;
+
+    let cls = 'cal-day';
+    if (hasPost)   cls += ' has-post';
+    if (isToday)   cls += ' today';
+    if (isSelected) cls += ' selected';
+
+    const btn = el('button', { className: cls, textContent: String(d) });
+
+    if (hasPost || isToday) {
+      btn.addEventListener('click', () => {
+        selectedDateStr = dateISO;
+        applyFilter('date', dateISO);
+      });
+    } else {
+      btn.style.opacity = '0.35';
+      btn.style.cursor = 'default';
+    }
+    gridEl.appendChild(btn);
+  }
+}
+
+document.getElementById('calPrev').addEventListener('click', e => {
+  e.stopPropagation();
+  calMonth--;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  buildCalendar();
+});
+document.getElementById('calNext').addEventListener('click', e => {
+  e.stopPropagation();
+  calMonth++;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  buildCalendar();
+});
+
+// ── 멤버 피커 ─────────────────────────────────────────────────────────────────
+window.toggleMemberPicker = (e) => {
+  e?.stopPropagation();
+  const dp = document.getElementById('datePicker');
+  const mp = document.getElementById('memberPicker');
+  const isOpen = !mp.classList.contains('hidden');
+  dp.classList.add('hidden');
+  if (isOpen) {
+    mp.classList.add('hidden');
+  } else {
+    buildMemberList();
+    mp.classList.remove('hidden');
+  }
+};
+
+function buildMemberList() {
+  const listEl = document.getElementById('memberList');
+  listEl.innerHTML = '';
+
+  // 내 항목 먼저, 나머지 가나다순
+  const members = Object.entries(userMap).sort(([aId, aName], [bId, bName]) => {
+    if (aId === myId) return -1;
+    if (bId === myId) return 1;
+    return aName.localeCompare(bName, 'ko');
+  });
+
+  members.forEach(([uid, name]) => {
+    const isSelected = uid === selectedMemberId;
+    const item = el('div', { className: 'member-item' + (isSelected ? ' selected' : '') });
+    const avatar = el('div', { className: 'member-avatar', textContent: name[0] });
+    const nameEl = el('span', { textContent: uid === myId ? `${name} (나)` : name });
+    item.appendChild(avatar);
+    item.appendChild(nameEl);
+    item.addEventListener('click', () => {
+      selectedMemberId = uid;
+      applyFilter('member', uid);
+    });
+    listEl.appendChild(item);
+  });
+}
+
+// 피커 외부 클릭 시 닫기
+document.addEventListener('click', e => {
+  const dp = document.getElementById('datePicker');
+  const mp = document.getElementById('memberPicker');
+  if (dp && !dp.classList.contains('hidden') && !dp.contains(e.target) && !document.getElementById('filterBtnDate').contains(e.target)) {
+    dp.classList.add('hidden');
+  }
+  if (mp && !mp.classList.contains('hidden') && !mp.contains(e.target) && !document.getElementById('filterBtnMember').contains(e.target)) {
+    mp.classList.add('hidden');
+  }
+});
+
+function closePickers() {
+  document.getElementById('datePicker')?.classList.add('hidden');
+  document.getElementById('memberPicker')?.classList.add('hidden');
+}
+
+// ── 활성 칩 ─────────────────────────────────────────────────────────────────
+function renderActiveChip() {
+  const chipEl = document.getElementById('activeChip');
+  chipEl.innerHTML = '';
+  chipEl.classList.add('hidden');
+
+  if (activeFilter === 'date' && selectedDateStr) {
+    const [y, m, d] = selectedDateStr.split('-');
+    const label = `${parseInt(m)}월 ${parseInt(d)}일`;
+    chipEl.classList.remove('hidden');
+    chipEl.innerHTML = `<span class="active-filter-chip">${label} <button class="chip-clear" onclick="applyFilter('all')">✕</button></span>`;
+  } else if (activeFilter === 'member' && selectedMemberId) {
+    const name = userMap[selectedMemberId] || '멤버';
+    chipEl.classList.remove('hidden');
+    chipEl.innerHTML = `<span class="active-filter-chip">${name} <button class="chip-clear" onclick="applyFilter('all')">✕</button></span>`;
+  }
+}
+
+// ── 피드 렌더 ─────────────────────────────────────────────────────────────────
 window.renderFeed = () => {
   const feedEl = document.getElementById('feedList');
   if (!feedEl) return;
   feedEl.innerHTML = '';
+  renderActiveChip();
 
   const sorted = [...allPosts]
-    .sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0))
-    .slice(0, 30);
+    .sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
 
-  // ── 내 글 모아보기 ──────────────────────────────────────────────
-  if (feedView === 'mine') {
+  // ── 전체 (최신순) ───────────────────────────────────────────────
+  if (activeFilter === 'all') {
+    const posts = sorted.slice(0, 50);
+    if (posts.length === 0) {
+      feedEl.appendChild(emptyState('아직 올라온 글이 없어요'));
+    } else {
+      posts.forEach(p => feedEl.appendChild(buildFeedCard(p)));
+    }
+    if (sorted.length > 50) {
+      feedEl.appendChild(el('div', { style:{textAlign:'center',padding:'16px',color:'#999',fontSize:'13px'}, textContent:`최근 50개만 표시됩니다. (전체 ${sorted.length}개)` }));
+    }
+    return;
+  }
+
+  // ── 내 글만 ─────────────────────────────────────────────────────
+  if (activeFilter === 'mine') {
     const mine = sorted.filter(p => p.uid === myId);
     if (mine.length === 0) {
-      feedEl.appendChild(el('div', {
-        style: { textAlign:'center', padding:'48px 0', color:'#999', fontSize:'14px' },
-        textContent: '아직 작성한 글이 없어요'
-      }));
+      feedEl.appendChild(emptyState('아직 작성한 글이 없어요'));
     } else {
       mine.forEach(p => feedEl.appendChild(buildFeedCard(p)));
     }
     return;
   }
 
-  // ── 날짜별 그룹핑 ──────────────────────────────────────────────
-  if (feedView === 'date') {
-    const groups = new Map();
-    sorted.forEach(p => {
+  // ── 날짜 필터 ───────────────────────────────────────────────────
+  if (activeFilter === 'date' && selectedDateStr) {
+    const filtered = sorted.filter(p => {
       const d = p.createdAt?.toDate();
-      const key = d
-        ? `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`
-        : '날짜 없음';
-      const label = d
-        ? `${d.getMonth()+1}월 ${d.getDate()}일`
-        : '날짜 없음';
-      if (!groups.has(key)) groups.set(key, { label, posts: [] });
-      groups.get(key).posts.push(p);
+      if (!d) return false;
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}` === selectedDateStr;
     });
-    groups.forEach(({ label, posts }) => {
-      const header = el('div', { className: 'feed-section-header' });
-      header.appendChild(el('div', { className: 'feed-section-keyword', textContent: label }));
-      header.appendChild(el('div', { className: 'feed-section-count', textContent: `${posts.length}편` }));
-      feedEl.appendChild(header);
-      posts.forEach(p => feedEl.appendChild(buildFeedCard(p)));
-    });
+    if (filtered.length === 0) {
+      feedEl.appendChild(emptyState('해당 날짜에 올라온 글이 없어요'));
+    } else {
+      filtered.forEach(p => feedEl.appendChild(buildFeedCard(p)));
+    }
     return;
   }
 
-  // ── 멤버별 그룹핑 ──────────────────────────────────────────────
-  if (feedView === 'member') {
-    const groups = new Map();
-    sorted.forEach(p => {
-      const name = userMap[p.uid] || '멤버';
-      if (!groups.has(p.uid)) groups.set(p.uid, { name, posts: [] });
-      groups.get(p.uid).posts.push(p);
-    });
-    // 내 글 먼저, 나머지는 닉네임 가나다순
-    const sorted2 = [...groups.entries()].sort(([aId], [bId]) => {
-      if (aId === myId) return -1;
-      if (bId === myId) return 1;
-      return (userMap[aId] || '').localeCompare(userMap[bId] || '', 'ko');
-    });
-    sorted2.forEach(([, { name, posts }]) => {
-      const header = el('div', { className: 'feed-section-header' });
-      header.appendChild(el('div', { className: 'feed-section-keyword', textContent: name }));
-      header.appendChild(el('div', { className: 'feed-section-count', textContent: `${posts.length}편` }));
-      feedEl.appendChild(header);
-      posts.forEach(p => feedEl.appendChild(buildFeedCard(p)));
-    });
+  // ── 멤버 필터 ───────────────────────────────────────────────────
+  if (activeFilter === 'member' && selectedMemberId) {
+    const filtered = sorted.filter(p => p.uid === selectedMemberId);
+    if (filtered.length === 0) {
+      feedEl.appendChild(emptyState('아직 작성한 글이 없어요'));
+    } else {
+      filtered.forEach(p => feedEl.appendChild(buildFeedCard(p)));
+    }
+    return;
   }
 
-  if (sorted.length === 30 && allPosts.length > 30) {
-    feedEl.appendChild(el('div', {
-      style: { textAlign:'center', padding:'16px', color:'#999', fontSize:'13px' },
-      textContent: `최근 30개만 표시됩니다. (전체 ${allPosts.length}개)`
-    }));
-  }
+  // fallback
+  sorted.slice(0, 50).forEach(p => feedEl.appendChild(buildFeedCard(p)));
 };
+
+function emptyState(text) {
+  return el('div', { style:{textAlign:'center',padding:'48px 0',color:'#999',fontSize:'14px'}, textContent: text });
+}
+
+// (구 setFeedView 호환)
+window.setFeedView = (view) => applyFilter(view === 'date' ? 'all' : view);
 
 // ── 피드 카드 생성 ────────────────────────────────────────────────────────────
 function buildFeedCard(p) {
