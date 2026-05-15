@@ -51,7 +51,8 @@
   .already-submitted-banner { background: #f0f0f0; border: 2px solid #111; border-radius: 16px; padding: 20px; text-align: center; font-weight: 700; margin-top: 20px; }
 
   /* 피드 필터 바 */
-  .feed-filter-bar { display:flex; gap:8px; padding:0 0 14px; }
+  .feed-filter-bar { display:flex; gap:8px; padding:0 0 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .feed-filter-bar::-webkit-scrollbar { display: none; }
   .feed-filter-btn {
     display:flex; align-items:center; gap:5px;
     padding:8px 14px; border:2px solid #111; border-radius:100px;
@@ -78,7 +79,6 @@
     background: #FFF;
     border-radius: 24px 24px 0 0;
     box-shadow: 0 -8px 40px rgba(0,0,0,0.18);
-    padding: 0 0 calc(24px + env(safe-area-inset-bottom));
     transition: bottom 0.35s cubic-bezier(0.32, 0.72, 0, 1);
     max-height: 75svh;
     display: flex; flex-direction: column;
@@ -103,7 +103,7 @@
   }
   .sheet-body {
     overflow-y: auto; -webkit-overflow-scrolling: touch;
-    padding: 10px 16px 0; flex: 1;
+    padding: 10px 16px calc(24px + env(safe-area-inset-bottom)); flex: 1;
   }
 
   /* 멤버/글감 선택 리스트 */
@@ -117,11 +117,6 @@
   .member-item:active { transform: scale(0.98); }
   .member-item:hover { border-color:#111; }
   .member-item.selected { border-color:#111; background:#111; color:#FFF; }
-  .member-item.reset-item {
-    border-color: #E8E8E8; background: #F8F8F8; color: #666;
-    font-weight: 600;
-  }
-  .member-item.reset-item:hover { border-color: #999; background: #F0F0F0; }
   .member-avatar {
     width:28px; height:28px; border-radius:50%;
     background:#111; color:#FFF;
@@ -188,14 +183,12 @@
 <body>
 <div class="app">
 
-  <!-- ── 메인 UI ── -->
   <div id="mainUI" class="hidden" style="flex-direction:column; height:100%;">
     <div class="header">
       <h1 id="mainTitle">에세이 클럽</h1>
       <div id="myCircle" class="mini-profile">?</div>
     </div>
 
-    <!-- 오늘 탭 -->
     <div class="content" id="tab-today">
       <div style="padding:40px 0 20px; border-bottom:2px solid #111; margin-bottom:30px; display:flex; justify-content:space-between; align-items:center;">
         <h2 id="dynamicWelcome" style="font-size:24px; font-weight:400; line-height:1.4; margin:0;">반가워요!</h2>
@@ -208,7 +201,6 @@
       <div id="statusList" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;"></div>
     </div>
 
-    <!-- 쓰기 탭 -->
     <div class="content hidden" id="tab-write">
       <div style="padding-top:20px;">
         <div style="background:#f9f9f9; padding:15px; border-radius:15px; margin-bottom:20px;">
@@ -231,12 +223,10 @@
       </div>
     </div>
 
-    <!-- 피드 탭 -->
     <div class="content hidden" id="tab-feed">
       <div style="padding-top:20px;">
         <h2 style="font-weight:800; margin:0 0 14px;">피드</h2>
 
-        <!-- 필터 버튼 바 -->
         <div class="feed-filter-bar" id="feedFilterBar">
           <button class="feed-filter-btn active" id="filterBtnAll" onclick="applyFilter('all')">
             전체
@@ -244,14 +234,13 @@
           <button class="feed-filter-btn" id="filterBtnMine" onclick="applyFilter('mine')">
             <span class="icon">✍️</span> 내 글만
           </button>
-          <button class="feed-filter-btn" id="filterBtnDate" onclick="toggleKeywordPicker(event)">
-            <span class="icon">📅</span> 날짜별
+          <button class="feed-filter-btn" id="filterBtnKeyword" onclick="toggleKeywordPicker(event)">
+            <span class="icon">📅</span> 글감별
           </button>
           <button class="feed-filter-btn" id="filterBtnMember" onclick="toggleMemberPicker(event)">
             <span class="icon">👤</span> 멤버별
           </button>
         </div>
-
 
         <div id="feedList"></div>
       </div>
@@ -264,7 +253,6 @@
     </div>
   </div>
 
-  <!-- 글 수정 모달 -->
   <div id="editPostModal" class="modal-overlay hidden">
     <div class="edit-container">
       <h2 style="font-weight:800; margin-bottom:20px;">에세이 수정</h2>
@@ -275,7 +263,6 @@
     </div>
   </div>
 
-  <!-- 어드민: 글감 관리 모달 -->
   <div id="adminModal" class="modal-overlay hidden">
     <div class="edit-container">
       <h2 style="font-weight:800; margin-bottom:4px;">글감 관리</h2>
@@ -296,10 +283,8 @@
     </div>
   </div>
 
-  <!-- 바텀 시트 오버레이 (공통) -->
   <div class="sheet-overlay" id="sheetOverlay" onclick="closeAllSheets()"></div>
 
-  <!-- 글감별 바텀 시트 -->
   <div class="bottom-sheet" id="keywordSheet">
     <div class="sheet-handle-bar"></div>
     <div class="sheet-header">
@@ -311,7 +296,6 @@
     </div>
   </div>
 
-  <!-- 멤버별 바텀 시트 -->
   <div class="bottom-sheet" id="memberSheet">
     <div class="sheet-handle-bar"></div>
     <div class="sheet-header">
@@ -323,7 +307,6 @@
     </div>
   </div>
 
-  <!-- 기수 전환 사이드 패널 -->
   <div class="batch-panel-overlay" id="batchOverlay" onclick="closeBatchPanel()"></div>
   <div class="batch-panel" id="batchPanel">
     <h3>기수 전환</h3>
@@ -331,10 +314,8 @@
     <button class="batch-panel-close" onclick="closeBatchPanel()">닫기</button>
   </div>
 
-  <!-- ── 인증 모달 ── -->
   <div id="authModal" class="modal-overlay hidden">
 
-    <!-- Step 0: 신규 / 기존 선택 -->
     <div id="authStep0" class="auth-box">
       <h2>Essay Club ✍️</h2>
       <p class="auth-sub">에세이 클럽에 오신 걸 환영해요.<br>해당하는 항목을 선택해주세요.</p>
@@ -343,7 +324,6 @@
       <button id="goReturning" class="btn-outline" style="margin-top:12px;">이미 가입했어요</button>
     </div>
 
-    <!-- Step 1-A: 신규 — 실명 + 참여코드 -->
     <div id="authStepNewReal" class="auth-box hidden">
       <h2>기본 정보 입력</h2>
       <p class="auth-sub">실제 이름과 참여 코드를 입력해주세요.</p>
@@ -354,7 +334,6 @@
       <button id="backToStep0FromReal" class="auth-back">← 뒤로</button>
     </div>
 
-    <!-- Step 1-B: 신규 — 닉네임 -->
     <div id="authStepNewNick" class="auth-box hidden">
       <h2>닉네임 설정</h2>
       <p class="auth-sub">클럽에서 사용할 닉네임을 입력해주세요.<br>나중에 변경이 어려우니 신중하게 정해주세요!</p>
@@ -364,7 +343,6 @@
       <button id="backToStep0FromNew" class="auth-back">← 뒤로</button>
     </div>
 
-    <!-- Step 1-B: 신규 — 비밀번호 설정 -->
     <div id="authStepNewPin" class="auth-box hidden">
       <h2>비밀번호 설정</h2>
       <p class="auth-sub" id="newPinSub">비밀번호 숫자 4자리를 설정해주세요.</p>
@@ -374,7 +352,6 @@
       <button id="backToNewNick" class="auth-back">← 닉네임 다시 입력</button>
     </div>
 
-    <!-- Step 2-A: 기존 — 닉네임 -->
     <div id="authStepRetNick" class="auth-box hidden">
       <h2>닉네임 입력</h2>
       <p class="auth-sub">닉네임을 입력해주세요.</p>
@@ -384,7 +361,6 @@
       <button id="backToStep0FromRet" class="auth-back">← 뒤로</button>
     </div>
 
-    <!-- Step 2-B: 기존 — 비밀번호 확인 -->
     <div id="authStepRetPin" class="auth-box hidden">
       <h2>비밀번호 입력</h2>
       <p class="auth-sub" id="retPinSub">비밀번호 숫자 4자리를 입력해주세요.</p>
@@ -439,7 +415,6 @@ const BATCH_CODES = { 'MOLE0': '0', 'MOLE01': '1' };
 const BATCH_LABELS = { 'pilot': '파일럿 1차', '0': '파일럿 2차', '1': '정식 1기' };
 
 // ── 유틸 ─────────────────────────────────────────────────────────────────────
-// 로컬 시간 기준으로 날짜 비교 (toISOString은 UTC 기준이라 한국에서 오전 9시 전까지 날짜 오류 발생)
 const pad = n => String(n).padStart(2, '0');
 const getTodayISO = () => {
   const d = new Date();
@@ -450,13 +425,11 @@ const isSameDay = ts => {
   const d = ts.toDate();
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}` === getTodayISO();
 };
-// 현재 글감 공개 시각 이후에 작성된 글인지 판단
 const isAfterCurrentKeyword = ts => {
   if (!ts) return false;
-  if (!currentKeywordDatetime) return isSameDay(ts); // 글감 없으면 날짜 기준 fallback
+  if (!currentKeywordDatetime) return isSameDay(ts);
   return ts.toDate() >= new Date(currentKeywordDatetime);
 };
-// getIsWeekend 제거 — shouldHideKeyword()로 통일
 
 function el(tag, props = {}, children = []) {
   const node = document.createElement(tag);
@@ -473,7 +446,6 @@ function el(tag, props = {}, children = []) {
   return node;
 }
 
-// 인증 스텝 전환 헬퍼
 function showStep(id) {
   ['authStep0','authStepNewReal','authStepNewNick','authStepNewPin','authStepRetNick','authStepRetPin']
     .forEach(s => document.getElementById(s).classList.add('hidden'));
@@ -485,7 +457,6 @@ window.switchTab = id => {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + id).classList.remove('hidden');
   document.getElementById('btn-' + id)?.classList.add('active');
-  // 쓰기 탭 진입 시 임시저장된 내용 복원
   if (id === 'write' && !todaySubmitted) restoreDraft();
 };
 window.toggleModal = (id, show) =>
@@ -510,7 +481,6 @@ window.onload = async () => {
     }
     localStorage.removeItem('essay_session');
   }
-  // 세션 없을 때만 인증 모달 표시
   document.getElementById('authModal').classList.remove('hidden');
 };
 
@@ -704,7 +674,6 @@ document.getElementById('retPinBtn').addEventListener('click', async () => {
   try {
     const snap = await getDoc(doc(db, 'profiles', nickname));
     const data = snap.data();
-    // pin 필드가 없는 기존 어드민 계정은 비밀번호 없이 통과
     if (data.pin && data.pin !== pin) {
       errEl.textContent = '비밀번호가 올바르지 않습니다.';
       btn.disabled = false; btn.textContent = '로그인';
@@ -765,7 +734,6 @@ function startApp() {
     renderFeed();
   });
 
-  // keywords를 먼저 가져와서 currentKeywordDatetime 세팅 후 posts 리스너 등록
   const nowISO = (() => {
     const d = new Date();
     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -774,7 +742,6 @@ function startApp() {
     if (!snap.empty) {
       currentKeywordDatetime = snap.docs[0].data().datetime || null;
     }
-    // currentKeywordDatetime 세팅 후 posts 리스너 등록
     if (postsUnsub) postsUnsub();
     postsUnsub = onSnapshot(query(collection(db, 'posts'), where('batchId', '==', currentBatch)), snap => {
       allPosts = [];
@@ -790,7 +757,6 @@ function startApp() {
       renderStatusAndWelcome(doneIds);
       renderFeed();
 
-      // 금~토 자정 전환 구간이면 제출 여부에 따라 글감 표시 재동기화
       const _d = new Date(); const _day = _d.getDay(); const _h = _d.getHours();
       if (_day === 6 && _h < 7) subscribeKeywords();
     });
@@ -801,41 +767,33 @@ function startApp() {
   onSnapshot(query(collection(db, 'keywords'), where('batchId', '==', currentBatch), orderBy('datetime', 'desc')), snap => {
     allKeywords = [];
     snap.forEach(d => allKeywords.push({ id: d.id, ...d.data() }));
-    // 새 글감 추가/삭제 시 타이머 재등록
     scheduleNextKeywordRefresh();
   });
 
   scheduleNextKeywordRefresh();
 
-  // 앱 시작 시 임시저장 내용 복원 (미제출 상태일 때만)
   if (!todaySubmitted) restoreDraft();
 }
 
-// ── 주말 글감 숨김 판단 ──────────────────────────────────────────────────────
-// 토 07:00 이후 ~ 월 07:00 이전 → 글감 숨김
 function shouldHideKeyword() {
   const now  = new Date();
-  const day  = now.getDay();   // 0=일, 1=월, 6=토
+  const day  = now.getDay();
   const hour = now.getHours();
-  if (day === 6 && hour >= 7) return true; // 토 07:00 이후
-  if (day === 0)              return true; // 일요일 전체
-  if (day === 1 && hour < 7)  return true; // 월 07:00 이전
+  if (day === 6 && hour >= 7) return true;
+  if (day === 0)              return true;
+  if (day === 1 && hour < 7)  return true;
   return false;
 }
 
-// ── 오늘의 글감 리스너 (날짜+시간 기준으로 재등록) ──────────────────────────
 function subscribeKeywords() {
   if (keywordsUnsub) keywordsUnsub();
 
-  // 토 07:00 ~ 월 07:00 → 완전한 주말 구간: 모두에게 글감 숨김
   if (shouldHideKeyword()) {
     document.getElementById('dispKeyword').textContent = '없음';
     document.getElementById('writeTabKeyword').textContent = '주말 휴식';
     return;
   }
 
-  // 금요일 밤 자정 ~ 토요일 07:00 구간 판별
-  // (shouldHideKeyword = false 이므로 이 구간은 토요일 day===6 && hour<7 인 경우)
   const now = new Date();
   const day  = now.getDay();
   const hour = now.getHours();
@@ -844,8 +802,6 @@ function subscribeKeywords() {
   const nowISO = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
   if (isFriMidnightToSat7) {
-    // 이 구간에서는 가장 최근 글감(금요일 글감)을 조회
-    // 제출한 사람 → "없음" 표시 / 미제출 사람 → 금요일 글감 계속 표시
     const q = query(
       collection(db, 'keywords'),
       where('batchId', '==', currentBatch),
@@ -863,11 +819,9 @@ function subscribeKeywords() {
       currentKeywordDatetime = kwData.datetime || null;
 
       if (todaySubmitted) {
-        // 이미 제출 완료 → 주말 모드로 표시
         document.getElementById('dispKeyword').textContent = '없음';
         document.getElementById('writeTabKeyword').textContent = '주말 휴식';
       } else {
-        // 미제출 → 금요일 글감 계속 노출
         document.getElementById('dispKeyword').textContent = kwData.text;
         document.getElementById('writeTabKeyword').textContent = kwData.text;
       }
@@ -875,7 +829,6 @@ function subscribeKeywords() {
     return;
   }
 
-  // 일반 평일 구간
   keywordsUnsub = onSnapshot(
     query(collection(db, 'keywords'), where('batchId', '==', currentBatch), where('datetime', '<=', nowISO), orderBy('datetime', 'desc'), limit(1)),
     snap => {
@@ -894,7 +847,6 @@ function subscribeKeywords() {
   );
 }
 
-// ── 기수 전환 사이드 패널 ────────────────────────────────────────────────────
 window.openBatchPanel = () => {
   const listEl = document.getElementById('batchBtnList');
   listEl.innerHTML = '';
@@ -924,8 +876,6 @@ window.closeBatchPanel = () => {
   document.getElementById('batchOverlay').classList.remove('open');
 };
 
-// ── 글감 공개 시각 자동 갱신 타이머 ─────────────────────────────────────────
-// 다음 글감의 datetime을 Firestore에서 읽어 정확한 시각에 리스너 재등록
 let kwRefreshTimer = null;
 
 function resubscribePosts() {
@@ -944,7 +894,6 @@ function resubscribePosts() {
     renderStatusAndWelcome(doneIds);
     renderFeed();
 
-    // 금~토 자정 전환 구간이면 제출 여부에 따라 글감 표시 재동기화
     const _d = new Date(); const _day = _d.getDay(); const _h = _d.getHours();
     if (_day === 6 && _h < 7) subscribeKeywords();
   });
@@ -953,9 +902,7 @@ function resubscribePosts() {
 async function scheduleNextKeywordRefresh() {
   if (kwRefreshTimer) clearTimeout(kwRefreshTimer);
 
-  // 현재 시각 이후 공개될 글감 중 가장 가까운 것 조회
   const now = new Date();
-  const pad = n => String(n).padStart(2, '0');
   const nowISO = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
   try {
@@ -964,26 +911,17 @@ async function scheduleNextKeywordRefresh() {
     );
 
     if (!snap.empty) {
-      const nextDatetime = snap.docs[0].data().datetime; // "YYYY-MM-DDTHH:MM"
+      const nextDatetime = snap.docs[0].data().datetime;
       const nextDate     = new Date(nextDatetime);
-      const msUntilNext  = nextDate - new Date() + 1000; // 1초 여유
+      const msUntilNext  = nextDate - new Date() + 1000;
 
       kwRefreshTimer = setTimeout(async () => {
-        // 1. currentKeywordDatetime 업데이트
         currentKeywordDatetime = nextDatetime;
-
-        // 2. 글감 리스너 재등록 (새 글감 화면에 노출)
         subscribeKeywords();
-
-        // 3. posts 리스너 재등록 (새 글감 기준으로 제출 여부 재판단)
         resubscribePosts();
-
-        // 4. 다음 글감 타이머 재등록
         scheduleNextKeywordRefresh();
       }, msUntilNext);
     }
-    // 다음 글감이 없으면 타이머 없이 대기
-    // (어드민이 새 글감 추가 시 allKeywords onSnapshot이 갱신되면 scheduleNextKeywordRefresh 재호출)
   } catch(e) {
     console.warn('다음 글감 타이머 설정 실패:', e);
   }
@@ -1029,8 +967,9 @@ function renderStatusAndWelcome(doneIds = new Set()) {
 }
 
 // ── 피드 필터 상태 ────────────────────────────────────────────────────────────
-let activeFilter     = 'all';   // 'all' | 'mine' | 'date' | 'member'
-let selectedMemberId = null;    // uid string
+let activeFilter     = 'all';
+let selectedMemberId = null;
+let selectedKeyword  = null;
 
 // ── 필터 적용 ─────────────────────────────────────────────────────────────────
 window.applyFilter = (type, payload) => {
@@ -1038,7 +977,7 @@ window.applyFilter = (type, payload) => {
   closePickers();
   updateFilterButtons();
 
-  if (type === 'date' && payload) {
+  if (type === 'keyword' && payload) {
     selectedKeyword = payload;
   } else if (type === 'member' && payload) {
     selectedMemberId = payload;
@@ -1051,35 +990,13 @@ window.applyFilter = (type, payload) => {
 };
 
 function updateFilterButtons() {
-  const ids = ['All','Mine','Date','Member'];
+  const ids = ['All', 'Mine', 'Keyword', 'Member'];
   ids.forEach(id => {
     const btn = document.getElementById('filterBtn' + id);
     if (!btn) return;
-    const map = { All:'all', Mine:'mine', Date:'date', Member:'member' };
+    const map = { All: 'all', Mine: 'mine', Keyword: 'keyword', Member: 'member' };
     btn.classList.toggle('active', activeFilter === map[id]);
   });
-
-  // 날짜별 버튼 텍스트 업데이트
-  const dateBtn = document.getElementById('filterBtnDate');
-  if (dateBtn) {
-    if (activeFilter === 'date' && selectedKeyword) {
-      const shortLabel = selectedKeyword.length > 8 ? selectedKeyword.slice(0, 8) + '…' : selectedKeyword;
-      dateBtn.innerHTML = `<span class="icon">📅</span> ${shortLabel}`;
-    } else {
-      dateBtn.innerHTML = `<span class="icon">📅</span> 날짜별`;
-    }
-  }
-
-  // 멤버별 버튼 텍스트 업데이트
-  const memberBtn = document.getElementById('filterBtnMember');
-  if (memberBtn) {
-    if (activeFilter === 'member' && selectedMemberId) {
-      const name = userMap[selectedMemberId] || '멤버';
-      memberBtn.innerHTML = `<span class="icon">👤</span> ${name}`;
-    } else {
-      memberBtn.innerHTML = `<span class="icon">👤</span> 멤버별`;
-    }
-  }
 }
 
 // ── 바텀 시트 열기/닫기 ─────────────────────────────────────────────────────
@@ -1101,9 +1018,6 @@ function closePickers() {
 }
 
 // ── 글감별 피커 ─────────────────────────────────────────────────────────────────
-// selectedKeyword: 선택된 글감 텍스트 (keyword 필드값과 대응)
-let selectedKeyword = null;
-
 window.toggleKeywordPicker = (e) => {
   e?.stopPropagation();
   const sheet = document.getElementById('keywordSheet');
@@ -1120,26 +1034,20 @@ function buildKeywordList() {
   const listEl = document.getElementById('keywordList');
   listEl.innerHTML = '';
 
-  // 현재 시각 기준 nowISO
   const _now = new Date();
   const _pad = n => String(n).padStart(2, '0');
   const nowISO = `${_now.getFullYear()}-${_pad(_now.getMonth()+1)}-${_pad(_now.getDate())}T${_pad(_now.getHours())}:${_pad(_now.getMinutes())}`;
 
-  // 미래 글감 제거 (어드민 포함 모두에게) — 공개 시각이 지난 것만 표시
   const visibleKeywords = allKeywords.filter(kw => {
-    if (!kw.datetime) return true; // datetime 없는 경우 허용
+    if (!kw.datetime) return true;
     return kw.datetime <= nowISO;
   });
 
-  // 최신순 정렬
   const sorted = [...visibleKeywords].sort((a, b) =>
     (b.datetime || '').localeCompare(a.datetime || '')
   );
 
-  // 글이 있는 글감 세트
   const keywordsWithPosts = new Set(allPosts.map(p => p.keyword).filter(Boolean));
-
-  // 글이 있는 글감만 표시 (글 없는 과거 글감은 숨김)
   const displayable = sorted.filter(kw => keywordsWithPosts.has(kw.text));
 
   if (displayable.length === 0) {
@@ -1147,16 +1055,9 @@ function buildKeywordList() {
     return;
   }
 
-  // 전체 보기 (필터 초기화) 아이템
-  const resetItem = el('div', { className: 'member-item reset-item' });
-  resetItem.appendChild(el('span', { textContent: '↩ 전체 보기' }));
-  resetItem.addEventListener('click', () => applyFilter('all'));
-  listEl.appendChild(resetItem);
-
   displayable.forEach(kw => {
-    const isSelected = kw.text === selectedKeyword;
+    const isSelected = kw.text === selectedKeyword && activeFilter === 'keyword';
 
-    // 날짜 라벨 파싱 (datetime: "YYYY-MM-DDTHH:MM")
     let dateLabel = '';
     if (kw.datetime) {
       const parts = kw.datetime.split('T')[0].split('-');
@@ -1175,8 +1076,7 @@ function buildKeywordList() {
     const count = allPosts.filter(p => p.keyword === kw.text).length;
     item.appendChild(el('span', { style:{ fontSize:'11px', fontWeight:'700', flexShrink:'0' }, textContent: `${count}편` }));
     item.addEventListener('click', () => {
-      selectedKeyword = kw.text;
-      applyFilter('date', kw.text);
+      applyFilter('keyword', kw.text);
     });
 
     listEl.appendChild(item);
@@ -1200,13 +1100,6 @@ function buildMemberList() {
   const listEl = document.getElementById('memberList');
   listEl.innerHTML = '';
 
-  // 전체 보기 (필터 초기화) 아이템
-  const resetItem = el('div', { className: 'member-item reset-item' });
-  resetItem.appendChild(el('span', { textContent: '↩ 전체 보기' }));
-  resetItem.addEventListener('click', () => applyFilter('all'));
-  listEl.appendChild(resetItem);
-
-  // 내 항목 먼저, 나머지 가나다순
   const members = Object.entries(userMap).sort(([aId, aName], [bId, bName]) => {
     if (aId === myId) return -1;
     if (bId === myId) return 1;
@@ -1214,22 +1107,18 @@ function buildMemberList() {
   });
 
   members.forEach(([uid, name]) => {
-    const isSelected = uid === selectedMemberId;
+    const isSelected = uid === selectedMemberId && activeFilter === 'member';
     const item = el('div', { className: 'member-item' + (isSelected ? ' selected' : '') });
     const avatar = el('div', { className: 'member-avatar', textContent: name[0] });
     const nameEl = el('span', { textContent: uid === myId ? `${name} (나)` : name });
     item.appendChild(avatar);
     item.appendChild(nameEl);
     item.addEventListener('click', () => {
-      selectedMemberId = uid;
       applyFilter('member', uid);
     });
     listEl.appendChild(item);
   });
 }
-
-
-
 
 // ── 피드 렌더 ─────────────────────────────────────────────────────────────────
 window.renderFeed = () => {
@@ -1240,7 +1129,6 @@ window.renderFeed = () => {
   const sorted = [...allPosts]
     .sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
 
-  // ── 전체 (최신순) ───────────────────────────────────────────────
   if (activeFilter === 'all') {
     const posts = sorted.slice(0, 50);
     if (posts.length === 0) {
@@ -1254,7 +1142,6 @@ window.renderFeed = () => {
     return;
   }
 
-  // ── 내 글만 ─────────────────────────────────────────────────────
   if (activeFilter === 'mine') {
     const mine = sorted.filter(p => p.uid === myId);
     if (mine.length === 0) {
@@ -1265,8 +1152,7 @@ window.renderFeed = () => {
     return;
   }
 
-  // ── 글감별 필터 (keyword 필드 기준) ────────────────────────────
-  if (activeFilter === 'date' && selectedKeyword) {
+  if (activeFilter === 'keyword' && selectedKeyword) {
     const filtered = sorted.filter(p => p.keyword === selectedKeyword);
     if (filtered.length === 0) {
       feedEl.appendChild(emptyState('해당 글감에 올라온 글이 없어요'));
@@ -1276,7 +1162,6 @@ window.renderFeed = () => {
     return;
   }
 
-  // ── 멤버 필터 ───────────────────────────────────────────────────
   if (activeFilter === 'member' && selectedMemberId) {
     const filtered = sorted.filter(p => p.uid === selectedMemberId);
     if (filtered.length === 0) {
@@ -1287,7 +1172,6 @@ window.renderFeed = () => {
     return;
   }
 
-  // fallback
   sorted.slice(0, 50).forEach(p => feedEl.appendChild(buildFeedCard(p)));
 };
 
@@ -1295,7 +1179,6 @@ function emptyState(text) {
   return el('div', { style:{textAlign:'center',padding:'48px 0',color:'#999',fontSize:'14px'}, textContent: text });
 }
 
-// (구 setFeedView 호환)
 window.setFeedView = (view) => applyFilter(view === 'date' ? 'all' : view);
 
 // ── 피드 카드 생성 ────────────────────────────────────────────────────────────
@@ -1378,7 +1261,6 @@ document.getElementById('saveEditBtn').addEventListener('click', async () => {
   }
 });
 
-// ── 글 제출 ──────────────────────────────────────────────────────────────────
 // ── 임시저장 (Auto-save) ──────────────────────────────────────────────────────
 const DRAFT_KEY_TEXT  = 'essay_draft_text';
 const DRAFT_KEY_TITLE = 'essay_draft_title';
@@ -1407,7 +1289,6 @@ function restoreDraft() {
   if (titleEl && title) titleEl.value = title;
   if (textEl  && text)  {
     textEl.value = text;
-    // 글자수 및 버튼 상태 동기화
     const len = text.length;
     const trimLen = text.trim().length;
     const countEl = document.getElementById('charCount');
@@ -1428,8 +1309,8 @@ function showAutosaveStatus(msg) {
 
 document.getElementById('postText')?.addEventListener('input', e => {
   const val = e.target.value;
-  const len = val.length;           // 공백 포함 글자수
-  const trimLen = val.trim().length; // 제출 버튼 활성화는 공백 제외
+  const len = val.length;
+  const trimLen = val.trim().length;
   const countEl = document.getElementById('charCount');
   if (countEl) {
     countEl.textContent = len;
@@ -1439,7 +1320,6 @@ document.getElementById('postText')?.addEventListener('input', e => {
   btn.disabled = trimLen === 0;
   btn.style.opacity = trimLen === 0 ? '0.3' : '1';
 
-  // 500ms 디바운스 후 localStorage에 임시저장
   clearTimeout(autosaveTimer);
   autosaveTimer = setTimeout(saveDraft, 500);
 });
@@ -1448,6 +1328,7 @@ document.getElementById('postTitle')?.addEventListener('input', () => {
   clearTimeout(autosaveTimer);
   autosaveTimer = setTimeout(saveDraft, 500);
 });
+
 document.getElementById('submitBtn').addEventListener('click', async () => {
   if (todaySubmitted) { alert('오늘은 이미 제출하셨습니다!'); return; }
   const text = document.getElementById('postText').value;
@@ -1522,7 +1403,7 @@ document.getElementById('saveKwBtn').addEventListener('click', async () => {
   const date = document.getElementById('kwDate').value;
   const time = document.getElementById('kwTime').value || '07:00';
   if (!text || !date) { alert('글감 내용과 날짜를 모두 입력해주세요.'); return; }
-  const datetime = date + 'T' + time; // "YYYY-MM-DDTHH:MM"
+  const datetime = date + 'T' + time;
   const btn = document.getElementById('saveKwBtn');
   btn.disabled = true; btn.textContent = '저장 중...';
   try {
