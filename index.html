@@ -1022,7 +1022,6 @@ window.toggleKeywordPicker = (e) => {
 };
 
 function buildKeywordList() {
-  // 중복 ID 충돌 우려로 바꾼 새 ID 지정
   const listEl = document.getElementById('keywordSheetList');
   if (!listEl) return;
   listEl.innerHTML = '';
@@ -1031,13 +1030,11 @@ function buildKeywordList() {
   const _pad = n => String(n).padStart(2, '0');
   const nowISO = `${_now.getFullYear()}-${_pad(_now.getMonth()+1)}-${_pad(_now.getDate())}T${_pad(_now.getHours())}:${_pad(_now.getMinutes())}`;
 
-  // 미래 글감을 배제하고 과거 및 현재 글감 필터링
   const visibleKeywords = allKeywords.filter(kw => {
     if (!kw.datetime) return true;
     return kw.datetime <= nowISO;
   });
 
-  // 오픈된 전체 과거 글감 최신순 정렬
   const sorted = [...visibleKeywords].sort((a, b) =>
     (b.datetime || '').localeCompare(a.datetime || '')
   );
@@ -1264,7 +1261,7 @@ function clearDraft() {
 
 function restoreDraft() {
   const title = localStorage.getItem(DRAFT_KEY_TITLE);
-  const text  = localStorage.getItem(DRAFT_KEY_TEXT);
+  const text = localStorage.getItem(DRAFT_KEY_TEXT);
   if (!title && !text) return;
 
   const titleEl = document.getElementById('postTitle');
