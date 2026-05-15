@@ -64,14 +64,14 @@
 
   /* 날짜 달력 드롭다운 */
   .feed-dropdown {
-    position:absolute; z-index:500; background:#FFF;
+    position:absolute; top:calc(100% + 8px); left:0; right:0;
+    z-index:500; background:#FFF;
     border:2px solid #111; border-radius:16px;
     padding:16px; box-shadow:6px 6px 0 #111;
-    min-width:260px;
   }
 
-  /* 멤버 선택 드롭다운 */
-  .member-list { display:flex; flex-direction:column; gap:6px; max-height:320px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  /* 멤버/글감 선택 드롭다운 */
+  .member-list { display:flex; flex-direction:column; gap:6px; max-height:360px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
   .member-item {
     display:flex; align-items:center; gap:10px;
     padding:10px 12px; border:2px solid #DDD; border-radius:12px;
@@ -204,32 +204,34 @@
       <div style="padding-top:20px;">
         <h2 style="font-weight:800; margin:0 0 14px;">피드</h2>
 
-        <!-- 필터 버튼 바 -->
-        <div class="feed-filter-bar" id="feedFilterBar">
-          <button class="feed-filter-btn active" id="filterBtnAll" onclick="applyFilter('all')">
-            전체
-          </button>
-          <button class="feed-filter-btn" id="filterBtnMine" onclick="applyFilter('mine')">
-            <span class="icon">✍️</span> 내 글만
-          </button>
-          <button class="feed-filter-btn" id="filterBtnDate" onclick="toggleKeywordPicker(event)">
-            <span class="icon">📅</span> 날짜별
-          </button>
-          <button class="feed-filter-btn" id="filterBtnMember" onclick="toggleMemberPicker(event)">
-            <span class="icon">👤</span> 멤버별
-          </button>
-        </div>
+        <!-- 필터 버튼 바 + 드롭다운 (position:relative wrapper) -->
+        <div style="position:relative; margin-bottom:4px;">
+          <div class="feed-filter-bar" id="feedFilterBar">
+            <button class="feed-filter-btn active" id="filterBtnAll" onclick="applyFilter('all')">
+              전체
+            </button>
+            <button class="feed-filter-btn" id="filterBtnMine" onclick="applyFilter('mine')">
+              <span class="icon">✍️</span> 내 글만
+            </button>
+            <button class="feed-filter-btn" id="filterBtnDate" onclick="toggleKeywordPicker(event)">
+              <span class="icon">📅</span> 날짜별
+            </button>
+            <button class="feed-filter-btn" id="filterBtnMember" onclick="toggleMemberPicker(event)">
+              <span class="icon">👤</span> 멤버별
+            </button>
+          </div>
 
-        <!-- 글감별 피커 -->
-        <div id="keywordPicker" class="feed-dropdown hidden" style="margin-bottom:12px;">
-          <div style="font-size:11px; font-weight:800; color:#999; margin-bottom:8px; letter-spacing:0.05em;">글감 선택</div>
-          <div class="member-list" id="keywordList"></div>
-        </div>
+          <!-- 글감별 피커 (absolute) -->
+          <div id="keywordPicker" class="feed-dropdown hidden">
+            <div style="font-size:11px; font-weight:800; color:#999; margin-bottom:8px; letter-spacing:0.05em;">글감 선택</div>
+            <div class="member-list" id="keywordList"></div>
+          </div>
 
-        <!-- 멤버 선택 드롭다운 -->
-        <div id="memberPicker" class="feed-dropdown hidden" style="margin-bottom:12px;">
-          <div style="font-size:11px; font-weight:800; color:#999; margin-bottom:8px; letter-spacing:0.05em;">멤버 선택</div>
-          <div class="member-list" id="memberList"></div>
+          <!-- 멤버 선택 드롭다운 (absolute) -->
+          <div id="memberPicker" class="feed-dropdown hidden">
+            <div style="font-size:11px; font-weight:800; color:#999; margin-bottom:8px; letter-spacing:0.05em;">멤버 선택</div>
+            <div class="member-list" id="memberList"></div>
+          </div>
         </div>
 
         <!-- 활성 필터 표시 -->
