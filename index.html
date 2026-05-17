@@ -919,6 +919,14 @@ async function scheduleNextKeywordRefresh() {
   }
 }
 
+// ── 백그라운드 복귀 시 글감 갱신 ────────────────────────────────────────────
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    subscribeKeywords();
+    scheduleNextKeywordRefresh();
+  }
+});
+
 // ── 오늘 탭 ──────────────────────────────────────────────────────────────────
 function renderStatusAndWelcome(doneIds = new Set()) {
   const welcomeEl = document.getElementById('dynamicWelcome');
@@ -946,15 +954,18 @@ function renderStatusAndWelcome(doneIds = new Set()) {
   const sList = document.getElementById('statusList');
   if (!sList) return;
   sList.innerHTML = '';
+  const hideKeyword = shouldHideKeyword();
   Object.entries(userMap).forEach(([id, name]) => {
     const done = doneIds.has(id);
     const card = el('div', { style: { border:'2px solid #111', padding:'15px', borderRadius:'20px', display:'flex', alignItems:'center', gap:'10px' } });
     card.appendChild(el('b', { textContent: name }));
-    card.appendChild(el('span', {
-      style: { fontSize:'10px', padding:'2px 5px', border:'1px solid #111', borderRadius:'5px',
-               background: done ? '#111' : '#FFF', color: done ? '#FFF' : '#111' },
-      textContent: done ? '완료' : '미제출'
-    }));
+    if (!hideKeyword) {
+      card.appendChild(el('span', {
+        style: { fontSize:'10px', padding:'2px 5px', border:'1px solid #111', borderRadius:'5px',
+                 background: done ? '#111' : '#FFF', color: done ? '#FFF' : '#111' },
+        textContent: done ? '완료' : '미제출'
+      }));
+    }
     sList.appendChild(card);
   });
 }
