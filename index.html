@@ -306,7 +306,7 @@
       <h2>기본 정보 입력</h2>
       <p class="auth-sub">실제 이름과 참여 코드를 입력해주세요.</p>
       <input id="newRealInput" type="text" placeholder="실명 (예: 홍길동)" maxlength="10">
-      <input id="newCodeInput" type="text" placeholder="참여 코드 (예: MOLE01)" maxlength="10" style="text-transform:uppercase;">
+      <input id="newCodeInput" type="text" placeholder="참여 코드 (예: ESSAY01)" maxlength="10" style="text-transform:uppercase;">
       <p id="newRealError" class="auth-error"></p>
       <button id="newRealBtn" class="btn-next">다음</button>
       <button id="backToStep0FromReal" class="auth-back">← 뒤로</button>
@@ -790,7 +790,7 @@ function subscribeKeywords() {
 
   if (shouldHideKeyword()) {
     document.getElementById('dispKeyword').textContent = '없음';
-    document.getElementById('writeTabKeyword').textContent = '주말 휴식';
+    document.getElementById('writeTabKeyword').textContent = '없음';
     return;
   }
 
@@ -814,7 +814,7 @@ function subscribeKeywords() {
 
       if (todaySubmitted) {
         document.getElementById('dispKeyword').textContent = '없음';
-        document.getElementById('writeTabKeyword').textContent = '주말 휴식';
+        document.getElementById('writeTabKeyword').textContent = '없음';
       } else {
         document.getElementById('dispKeyword').textContent = kwData.text;
         document.getElementById('writeTabKeyword').textContent = kwData.text;
