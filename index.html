@@ -136,14 +136,11 @@
   .feed-body {
     white-space: pre-wrap; margin: 0;
     overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 4;
-    line-clamp: 4;
+    line-height: 1.6;
+    max-height: calc(1.6em * 4);
   }
   .feed-body.expanded {
-    display: block;
-    -webkit-line-clamp: unset;
+    max-height: none;
   }
   .feed-more-btn {
     background: none; border: none; padding: 6px 0 0;
@@ -1215,8 +1212,11 @@ function buildFeedCard(p) {
   if (!isPrivate) {
     requestAnimationFrame(() => {
       const lineHeight = parseFloat(getComputedStyle(bodyEl).lineHeight) || 20;
-      const maxHeight  = lineHeight * 4;
-      if (bodyEl.scrollHeight > maxHeight + 2) {
+      const clampedHeight = lineHeight * 4;
+      bodyEl.style.maxHeight = 'none';
+      const fullHeight = bodyEl.scrollHeight;
+      bodyEl.style.maxHeight = '';
+      if (fullHeight > clampedHeight + 2) {
         const moreBtn = el('button', { className: 'feed-more-btn', textContent: '더보기' });
         moreBtn.addEventListener('click', () => {
           const expanded = bodyEl.classList.toggle('expanded');
