@@ -1212,7 +1212,7 @@ function buildFeedCard(p) {
   card.appendChild(bodyEl);
 
   if (!isPrivate) {
-    requestAnimationFrame(() => {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
       const fullHeight = bodyEl.scrollHeight;
       const lineHeight = parseFloat(getComputedStyle(bodyEl).lineHeight) || 20;
       const clampedHeight = lineHeight * 4;
@@ -1226,7 +1226,7 @@ function buildFeedCard(p) {
         });
         card.appendChild(moreBtn);
       }
-    });
+    }));
   }
   return card;
 }
