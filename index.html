@@ -137,8 +137,6 @@
     white-space: pre-wrap; margin: 0;
     overflow: hidden;
     line-height: 1.6;
-  }
-  .feed-body.clamped {
     max-height: calc(1.6em * 4);
   }
   .feed-body.expanded {
@@ -148,6 +146,105 @@
     background: none; border: none; padding: 6px 0 0;
     font-size: 12px; color: #999; cursor: pointer;
     text-decoration: underline; display: block;
+  }
+
+  /* ── 파일럿 1기(pilot) 가로 슬라이드 전용 확장 스타일 ─────────────────────── */
+  .carousel-container {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    margin-top: 10px;
+    padding-bottom: 40px;
+  }
+  .carousel-section {
+    border-bottom: 1.5px dashed #EEE;
+    padding-bottom: 24px;
+  }
+  .carousel-section:last-child {
+    border-bottom: none;
+  }
+  .carousel-keyword-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 14px;
+  }
+  .carousel-keyword-title {
+    font-size: 17px;
+    font-weight: 900;
+    margin: 0;
+    color: var(--main);
+  }
+  .carousel-keyword-count {
+    font-size: 12px;
+    color: #999;
+    font-weight: 700;
+  }
+  .carousel-track {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding: 4px 4px 12px 4px;
+    margin: 0 -4px;
+  }
+  .carousel-track::-webkit-scrollbar { display: none; }
+  .carousel-track { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .carousel-card {
+    flex: 0 0 88%;
+    scroll-snap-align: start;
+    border: 2.5px solid #111;
+    border-radius: 24px;
+    padding: 24px;
+    background: #FFF;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: 4px 4px 0px #111;
+    min-height: 380px;
+    max-height: 420px;
+  }
+  .carousel-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+  }
+  .carousel-card-title {
+    margin: 4px 0 10px 0;
+    font-size: 17px;
+    font-weight: 900;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .carousel-card-body {
+    white-space: pre-wrap;
+    margin: 0;
+    line-height: 1.65;
+    font-size: 14.5px;
+    color: #222;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 10;
+    -webkit-box-orient: vertical;
+    flex: 1;
+  }
+  .carousel-card-footer {
+    margin-top: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: #999;
+    flex-shrink: 0;
+    padding-top: 10px;
+    border-top: 1px solid #F0F0F0;
   }
 
   /* 인증 UI */
@@ -234,11 +331,11 @@
           <button class="feed-filter-btn active" id="filterBtnAll" onclick="applyFilter('all')">
             전체
           </button>
-          <button class="feed-filter-btn" id="filterBtnMine" onclick="applyFilter('mine')">
-            <span class="icon">✍️</span> 내 글만
-          </button>
           <button class="feed-filter-btn" id="filterBtnKeyword" onclick="toggleKeywordPicker(event)">
             <span class="icon">📅</span> 글감별
+          </button>
+          <button class="feed-filter-btn" id="filterBtnMine" onclick="applyFilter('mine')">
+            <span class="icon">✍️</span> 내 글만
           </button>
           <button class="feed-filter-btn" id="filterBtnMember" onclick="toggleMemberPicker(event)">
             <span class="icon">👤</span> 멤버별
@@ -853,6 +950,7 @@ window.openBatchPanel = () => {
       if (bId === currentBatch) { closeBatchPanel(); return; }
       currentBatch = bId;
       localStorage.setItem('essay_currentBatch', currentBatch);
+      todaySubmitted = false;  // 기수 전환 시 제출 상태 초기화
       closeBatchPanel();
       if (profilesUnsub) profilesUnsub();
       if (postsUnsub) postsUnsub();
@@ -1013,6 +1111,10 @@ window.closeAllSheets = () => {
   document.getElementById('keywordSheet').classList.remove('open');
   document.getElementById('memberSheet').classList.remove('open');
   document.body.style.overflow = '';
+  const memberSheetTitle = document.querySelector('#memberSheet .sheet-title');
+  if (memberSheetTitle && memberSheetTitle.textContent !== '멤버 선택') {
+    memberSheetTitle.textContent = '멤버 선택';
+  }
 };
 
 function closePickers() {
@@ -1127,46 +1229,170 @@ window.renderFeed = () => {
 
   const sorted = [...allPosts].sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
 
+  // 🎯 파일럿 1기(pilot) 전용 가로 슬라이드(카루셀) 분기
+  if (currentBatch === 'pilot') {
+    renderCarouselFeed(feedEl, sorted);
+    return;
+  }
+
+  // ── [기존 유지] 파일럿 2기 및 정식 기수용 기존 세로 피드 로직 ──────────────────────
   if (activeFilter === 'all') {
     const posts = sorted.slice(0, 50);
-    if (posts.length === 0) {
-      feedEl.appendChild(emptyState('아직 올라온 글이 없어요'));
-    } else {
-      posts.forEach(p => feedEl.appendChild(buildFeedCard(p)));
-    }
+    if (posts.length === 0) feedEl.appendChild(emptyState('아직 올라온 글이 없어요'));
+    else posts.forEach(p => feedEl.appendChild(buildFeedCard(p)));
     return;
   }
-
   if (activeFilter === 'mine') {
     const mine = sorted.filter(p => p.uid === myId);
-    if (mine.length === 0) {
-      feedEl.appendChild(emptyState('아직 작성한 글이 없어요'));
-    } else {
-      mine.forEach(p => feedEl.appendChild(buildFeedCard(p)));
-    }
+    if (mine.length === 0) feedEl.appendChild(emptyState('아직 작성한 글이 없어요'));
+    else mine.forEach(p => feedEl.appendChild(buildFeedCard(p)));
     return;
   }
-
   if (activeFilter === 'keyword' && selectedKeyword) {
     const filtered = sorted.filter(p => p.keyword === selectedKeyword);
-    if (filtered.length === 0) {
-      feedEl.appendChild(emptyState('해당 글감에 올라온 글이 없어요'));
-    } else {
-      filtered.forEach(p => feedEl.appendChild(buildFeedCard(p)));
-    }
+    if (filtered.length === 0) feedEl.appendChild(emptyState('해당 글감에 올라온 글이 없어요'));
+    else filtered.forEach(p => feedEl.appendChild(buildFeedCard(p)));
     return;
   }
-
   if (activeFilter === 'member' && selectedMemberId) {
     const filtered = sorted.filter(p => p.uid === selectedMemberId);
-    if (filtered.length === 0) {
-      feedEl.appendChild(emptyState('아직 작성한 글이 없어요'));
-    } else {
-      filtered.forEach(p => feedEl.appendChild(buildFeedCard(p)));
-    }
+    if (filtered.length === 0) feedEl.appendChild(emptyState('아직 작성한 글이 없어요'));
+    else filtered.forEach(p => feedEl.appendChild(buildFeedCard(p)));
     return;
   }
 };
+
+// ── 파일럿 1기 전용: 가로 슬라이드 뼈대 렌더링 함수 ─────────────────────────────────
+function renderCarouselFeed(container, sortedPosts) {
+  let filtered = sortedPosts;
+
+  if (activeFilter === 'mine') {
+    filtered = sortedPosts.filter(p => p.uid === myId);
+  } else if (activeFilter === 'keyword' && selectedKeyword) {
+    filtered = sortedPosts.filter(p => p.keyword === selectedKeyword);
+  } else if (activeFilter === 'member' && selectedMemberId) {
+    filtered = sortedPosts.filter(p => p.uid === selectedMemberId);
+  }
+
+  if (filtered.length === 0) {
+    container.appendChild(emptyState('조건에 맞는 에세이가 없습니다.'));
+    return;
+  }
+
+  const groupMap = {};
+  filtered.forEach(p => {
+    const kw = p.keyword || '기타 글감';
+    if (!groupMap[kw]) groupMap[kw] = [];
+    groupMap[kw].push(p);
+  });
+
+  const carouselWrapper = el('div', { className: 'carousel-container' });
+
+  Object.entries(groupMap).forEach(([keyword, posts]) => {
+    const section = el('div', { className: 'carousel-section' });
+
+    const header = el('div', { className: 'carousel-keyword-header' });
+    header.appendChild(el('h3', { className: 'carousel-keyword-title', textContent: `# ${keyword}` }));
+    header.appendChild(el('span', { className: 'carousel-keyword-count', textContent: `총 ${posts.length}편` }));
+    section.appendChild(header);
+
+    const track = el('div', { className: 'carousel-track' });
+    posts.forEach(p => {
+      track.appendChild(buildCarouselCard(p));
+    });
+
+    section.appendChild(track);
+    carouselWrapper.appendChild(section);
+  });
+
+  container.appendChild(carouselWrapper);
+}
+
+// ── 파일럿 1기 전용: 대형 카루셀 카드 컴포넌트 생성 ──────────────────────────────
+function buildCarouselCard(p) {
+  const name = userMap[p.uid] || '멤버';
+  const isMy = p.uid === myId;
+  const isPrivate = p.isPrivate && !isMy;
+
+  const card = el('div', { className: 'carousel-card' });
+
+  const topRow = el('div', { className: 'carousel-card-top' });
+  topRow.appendChild(el('b', { style: { fontSize: '14.5px' }, textContent: isMy ? `${name} (나)` : name }));
+
+  const btnWrap = el('div', { style: { display: 'flex', gap: '10px' } });
+  if (isMy) {
+    const editBtn = el('span', { style: { textDecoration: 'underline', cursor: 'pointer', fontSize: '11.5px', color: '#666' }, textContent: '수정' });
+    editBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openEditModal(p.id, p.title || '', p.text);
+    });
+    btnWrap.appendChild(editBtn);
+  }
+  if (amIAdmin) {
+    const delBtn = el('span', { style: { textDecoration: 'underline', cursor: 'pointer', fontSize: '11.5px', color: 'var(--accent)' }, textContent: '삭제' });
+    delBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!confirm('운영진 권한으로 이 글을 삭제하시겠습니까?')) return;
+      try { await deleteDoc(doc(db, 'posts', p.id)); } catch { alert('삭제 실패'); }
+    });
+    btnWrap.appendChild(delBtn);
+  }
+  topRow.appendChild(btnWrap);
+  card.appendChild(topRow);
+
+  if (p.title) {
+    card.appendChild(el('h4', { className: 'carousel-card-title', textContent: p.title }));
+  } else {
+    card.appendChild(el('div', { style: { height: '8px' } }));
+  }
+
+  const bodyText = isPrivate ? '비밀글입니다. 🔒' : p.text;
+  const bodyEl = el('p', {
+    className: 'carousel-card-body',
+    style: { color: isPrivate ? '#999' : '#222', fontStyle: isPrivate ? 'italic' : 'normal' },
+    textContent: bodyText
+  });
+  card.appendChild(bodyEl);
+
+  const footerRow = el('div', { className: 'carousel-card-footer' });
+  footerRow.appendChild(el('span', { textContent: isMy ? '내가 작성한 생각' : '멤버의 생각' }));
+
+  if (!isPrivate) {
+    footerRow.appendChild(el('span', { style: { fontWeight: 'bold', color: '#111' }, textContent: '터치해서 크게 읽기 ↗' }));
+    card.style.cursor = 'pointer';
+    card.addEventListener('click', () => {
+      openFullTextSheet(name, p.keyword || '글감', p.title, p.text);
+    });
+  } else {
+    footerRow.appendChild(el('span', { textContent: '공개 제한' }));
+  }
+  card.appendChild(footerRow);
+
+  return card;
+}
+
+// ── 카루셀 전용: 클릭 시 바텀 시트 연동 상세 읽기 기능 ───────────────────────────
+function openFullTextSheet(writer, keyword, title, text) {
+  const sheet = document.getElementById('memberSheet');
+  const titleEl = sheet.querySelector('.sheet-title');
+  const bodyEl = document.getElementById('memberList');
+
+  titleEl.textContent = `${writer}님의 에세이`;
+  bodyEl.innerHTML = '';
+
+  bodyEl.appendChild(el('div', { className: 'keyword-tag', style: { marginBottom: '14px' }, textContent: `# ${keyword}` }));
+
+  if (title) {
+    bodyEl.appendChild(el('h3', { style: { margin: '0 0 16px 0', fontSize: '19px', fontWeight: '900', lineHeight: '1.4' }, textContent: title }));
+  }
+
+  bodyEl.appendChild(el('p', {
+    style: { whiteSpace: 'pre-wrap', lineHeight: '1.75', fontSize: '15.5px', color: '#111', margin: '0', paddingBottom: '40px' },
+    textContent: text
+  }));
+
+  openSheet('memberSheet');
+}
 
 function emptyState(text) {
   return el('div', { style:{textAlign:'center',padding:'48px 0',color:'#999',fontSize:'14px'}, textContent: text });
@@ -1212,21 +1438,21 @@ function buildFeedCard(p) {
   card.appendChild(bodyEl);
 
   if (!isPrivate) {
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      const fullHeight = bodyEl.scrollHeight;
+    requestAnimationFrame(() => {
       const lineHeight = parseFloat(getComputedStyle(bodyEl).lineHeight) || 20;
       const clampedHeight = lineHeight * 4;
+      bodyEl.style.maxHeight = 'none';
+      const fullHeight = bodyEl.scrollHeight;
+      bodyEl.style.maxHeight = '';
       if (fullHeight > clampedHeight + 2) {
-        bodyEl.classList.add('clamped');
         const moreBtn = el('button', { className: 'feed-more-btn', textContent: '더보기' });
         moreBtn.addEventListener('click', () => {
           const expanded = bodyEl.classList.toggle('expanded');
-          bodyEl.classList.toggle('clamped', !expanded);
           moreBtn.textContent = expanded ? '접기' : '더보기';
         });
         card.appendChild(moreBtn);
       }
-    }));
+    });
   }
   return card;
 }
@@ -1242,10 +1468,16 @@ document.getElementById('saveEditBtn').addEventListener('click', async () => {
   const btn = document.getElementById('saveEditBtn');
   btn.disabled = true; btn.textContent = '수정 중...';
   try {
+    const newTitle = document.getElementById('editPostTitle').value;
+    const newText  = document.getElementById('editPostText').value;
     await updateDoc(doc(db, 'posts', currentEditId), {
-      title: document.getElementById('editPostTitle').value,
-      text:  document.getElementById('editPostText').value
+      title: newTitle,
+      text:  newText
     });
+    // 로컬 allPosts 즉시 반영 (onSnapshot 지연 대비)
+    const idx = allPosts.findIndex(p => p.id === currentEditId);
+    if (idx !== -1) { allPosts[idx] = { ...allPosts[idx], title: newTitle, text: newText }; }
+    renderFeed();
     toggleModal('editPostModal', false);
     alert('수정되었습니다.');
   } catch {
