@@ -1229,40 +1229,11 @@ window.renderFeed = () => {
 
   const sorted = [...allPosts].sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
 
-  // 🎯 파일럿 1기(pilot) 전용 가로 슬라이드(카루셀) 분기
-  if (currentBatch === 'pilot') {
-    renderCarouselFeed(feedEl, sorted);
-    return;
-  }
-
-  // ── [기존 유지] 파일럿 2기 및 정식 기수용 기존 세로 피드 로직 ──────────────────────
-  if (activeFilter === 'all') {
-    const posts = sorted.slice(0, 50);
-    if (posts.length === 0) feedEl.appendChild(emptyState('아직 올라온 글이 없어요'));
-    else posts.forEach(p => feedEl.appendChild(buildFeedCard(p)));
-    return;
-  }
-  if (activeFilter === 'mine') {
-    const mine = sorted.filter(p => p.uid === myId);
-    if (mine.length === 0) feedEl.appendChild(emptyState('아직 작성한 글이 없어요'));
-    else mine.forEach(p => feedEl.appendChild(buildFeedCard(p)));
-    return;
-  }
-  if (activeFilter === 'keyword' && selectedKeyword) {
-    const filtered = sorted.filter(p => p.keyword === selectedKeyword);
-    if (filtered.length === 0) feedEl.appendChild(emptyState('해당 글감에 올라온 글이 없어요'));
-    else filtered.forEach(p => feedEl.appendChild(buildFeedCard(p)));
-    return;
-  }
-  if (activeFilter === 'member' && selectedMemberId) {
-    const filtered = sorted.filter(p => p.uid === selectedMemberId);
-    if (filtered.length === 0) feedEl.appendChild(emptyState('아직 작성한 글이 없어요'));
-    else filtered.forEach(p => feedEl.appendChild(buildFeedCard(p)));
-    return;
-  }
+  // 🎯 모든 기수 공통: 가로 슬라이드(카루셀) 피드
+  renderCarouselFeed(feedEl, sorted);
 };
 
-// ── 파일럿 1기 전용: 가로 슬라이드 뼈대 렌더링 함수 ─────────────────────────────────
+// ── 피드 공통: 가로 슬라이드 뼈대 렌더링 함수 ─────────────────────────────────────
 function renderCarouselFeed(container, sortedPosts) {
   let filtered = sortedPosts;
 
@@ -1308,7 +1279,7 @@ function renderCarouselFeed(container, sortedPosts) {
   container.appendChild(carouselWrapper);
 }
 
-// ── 파일럿 1기 전용: 대형 카루셀 카드 컴포넌트 생성 ──────────────────────────────
+// ── 피드 공통: 대형 카루셀 카드 컴포넌트 생성 ────────────────────────────────────
 function buildCarouselCard(p) {
   const name = userMap[p.uid] || '멤버';
   const isMy = p.uid === myId;
@@ -1371,7 +1342,7 @@ function buildCarouselCard(p) {
   return card;
 }
 
-// ── 카루셀 전용: 클릭 시 바텀 시트 연동 상세 읽기 기능 ───────────────────────────
+// ── 피드 공통: 클릭 시 바텀 시트 연동 상세 읽기 기능 ────────────────────────────
 function openFullTextSheet(writer, keyword, title, text) {
   const sheet = document.getElementById('memberSheet');
   const titleEl = sheet.querySelector('.sheet-title');
