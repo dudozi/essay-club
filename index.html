@@ -293,10 +293,7 @@
     display: flex; align-items: center; justify-content: center; padding: 0;
   }
   .reader-counter { font-size: 13px; font-weight: 700; color: #999; }
-  .reader-track {
-    flex: 1; overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
+  .reader-track { flex: 1; overflow-y: auto; }
   .reader-card { padding: 28px 24px 60px; }
 </style>
 </head>
@@ -1397,18 +1394,20 @@ function openReader(posts, startIdx) {
   overlay.classList.remove('hidden');
 
   let tx = 0, ty = 0;
-  overlay.ontouchstart = e => { tx = e.touches[0].clientX; ty = e.touches[0].clientY; };
-  overlay.ontouchend   = e => {
+  function onTS(e) { tx = e.touches[0].clientX; ty = e.touches[0].clientY; }
+  function onTE(e) {
     const dx = e.changedTouches[0].clientX - tx;
     const dy = Math.abs(e.changedTouches[0].clientY - ty);
-    if (Math.abs(dx) < 60 || dy > Math.abs(dx)) return;
+    if (Math.abs(dx) < 50 || dy > Math.abs(dx)) return;
     if (dx < 0 && currentIdx < posts.length - 1) showCard(++currentIdx);
     else if (dx > 0 && currentIdx > 0) showCard(--currentIdx);
-  };
+  }
+  overlay.addEventListener('touchstart', onTS);
+  overlay.addEventListener('touchend', onTE);
 
   document.getElementById('readerCloseBtn').onclick = () => {
-    overlay.ontouchstart = null;
-    overlay.ontouchend   = null;
+    overlay.removeEventListener('touchstart', onTS);
+    overlay.removeEventListener('touchend', onTE);
     overlay.classList.add('hidden');
   };
 }
