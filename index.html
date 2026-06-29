@@ -49,7 +49,8 @@
   .already-submitted-banner { background: #f0f0f0; border: 2px solid #111; border-radius: 16px; padding: 20px; text-align: center; font-weight: 700; margin-top: 20px; }
 
   /* 피드 필터 바 */
-  .feed-filter-bar { display: flex; gap: 6px; padding: 10px 0 14px; width: 100%; justify-content: space-between; position: sticky; top: 0; background: var(--bg); z-index: 100; }
+  .feed-sticky-header { position: sticky; top: 0; background: #FFF; margin: 0 -24px; padding: 0 24px; z-index: 100; }
+  .feed-filter-bar { display: flex; gap: 6px; padding: 10px 0 14px; width: 100%; justify-content: space-between; }
   .feed-filter-btn {
     display: flex; align-items: center; justify-content: center; gap: 4px; flex: 1;
     padding: 8px 0; border: 2px solid #111; border-radius: 100px;
@@ -342,19 +343,20 @@
     </div>
 
     <div class="content hidden" id="tab-feed">
-      <div style="padding-top:20px;">
-        <h2 style="font-weight:800; margin:0 0 14px;">피드</h2>
-
-        <div class="feed-filter-bar" id="feedFilterBar">
-          <button class="feed-filter-btn active" id="filterBtnAll" onclick="applyFilter('all')">
-            전체
-          </button>
-          <button class="feed-filter-btn" id="filterBtnKeyword" onclick="toggleKeywordPicker(event)">
-            <span class="icon">📅</span> 글감별
-          </button>
-          <button class="feed-filter-btn" id="filterBtnMember" onclick="toggleMemberPicker(event)">
-            <span class="icon">👤</span> 멤버별
-          </button>
+      <div>
+        <div class="feed-sticky-header">
+          <h2 style="font-weight:800; margin:20px 0 0;">피드</h2>
+          <div class="feed-filter-bar" id="feedFilterBar">
+            <button class="feed-filter-btn active" id="filterBtnAll" onclick="applyFilter('all')">
+              전체
+            </button>
+            <button class="feed-filter-btn" id="filterBtnKeyword" onclick="toggleKeywordPicker(event)">
+              <span class="icon">📅</span> 글감별
+            </button>
+            <button class="feed-filter-btn" id="filterBtnMember" onclick="toggleMemberPicker(event)">
+              <span class="icon">👤</span> 멤버별
+            </button>
+          </div>
         </div>
 
         <div id="feedList"></div>
@@ -1358,7 +1360,6 @@ function buildCarouselCard(p, swipePosts, swipeIdx) {
   card.appendChild(bodyEl);
 
   const footerRow = el('div', { className: 'carousel-card-footer' });
-  footerRow.appendChild(el('span', { textContent: isMy ? '내가 작성한 생각' : '멤버의 생각' }));
   footerRow.appendChild(el('span', { style: { fontWeight: 'bold', color: '#111' }, textContent: '터치해서 크게 읽기 ↗' }));
   card.style.cursor = 'pointer';
   card.addEventListener('click', () => {
