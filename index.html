@@ -292,14 +292,10 @@
     color: #999; width: 36px; height: 36px;
     display: flex; align-items: center; justify-content: center; padding: 0;
   }
-  .reader-counter { font-size: 13px; font-weight: 700; color: #999; }
   .reader-track { flex: 1; overflow-y: auto; min-height: 0; }
   .reader-card { padding: 28px 24px 40px; }
-  .reader-dots {
-    display: flex; justify-content: center; gap: 6px; flex-shrink: 0;
-    padding: 10px 0 calc(12px + env(safe-area-inset-bottom));
-  }
-  .reader-dot { width: 6px; height: 6px; border-radius: 50%; background: #DDD; transition: background 0.2s; }
+  .reader-dots { display: flex; justify-content: center; align-items: center; gap: 6px; }
+  .reader-dot { width: 6px; height: 6px; border-radius: 50%; background: #DDD; transition: background 0.2s; flex-shrink: 0; }
   .reader-dot.on { background: #111; }
 </style>
 </head>
@@ -493,11 +489,10 @@
 <div id="readerOverlay" class="reader-overlay hidden">
   <div class="reader-header">
     <button id="readerCloseBtn" class="reader-close-btn">✕</button>
-    <span id="readerCounter" class="reader-counter"></span>
+    <div id="readerDots" class="reader-dots"></div>
     <div style="width:36px;"></div>
   </div>
   <div id="readerTrack" class="reader-track"></div>
-  <div id="readerDots" class="reader-dots"></div>
 </div>
 
 <script type="module">
@@ -1379,7 +1374,6 @@ function openReader(posts, startIdx) {
   let currentIdx = startIdx;
   const overlay  = document.getElementById('readerOverlay');
   const trackEl  = document.getElementById('readerTrack');
-  const counter  = document.getElementById('readerCounter');
 
   function showCard(idx) {
     const p    = posts[idx];
@@ -1394,7 +1388,6 @@ function openReader(posts, startIdx) {
     if (p.title) card.appendChild(el('h2', { style: { margin: '0 0 20px', fontSize: '22px', fontWeight: '900', lineHeight: '1.4' }, textContent: p.title }));
     card.appendChild(el('p', { style: { whiteSpace: 'pre-wrap', lineHeight: '1.8', fontSize: '16px', color: '#111', margin: '0' }, textContent: p.text }));
     trackEl.appendChild(card);
-    counter.textContent = posts.length > 1 ? `${idx + 1} / ${posts.length}` : '';
     document.querySelectorAll('.reader-dot').forEach((d, i) => d.classList.toggle('on', i === idx));
   }
 
