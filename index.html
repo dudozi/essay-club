@@ -294,19 +294,10 @@
   }
   .reader-counter { font-size: 13px; font-weight: 700; color: #999; }
   .reader-track {
-    flex: 1; display: flex;
-    overflow-x: scroll; overflow-y: hidden;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  .reader-track::-webkit-scrollbar { display: none; }
-  .reader-card {
-    flex: 0 0 100vw; height: 100%;
-    overflow-y: auto; padding: 28px 24px 60px;
-    scroll-snap-align: start;
+    flex: 1; overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
+  .reader-card { padding: 28px 24px 60px; }
 </style>
 </head>
 <body>
@@ -1386,10 +1377,12 @@ function openReader(posts, startIdx) {
   const trackEl  = document.getElementById('readerTrack');
   const counter  = document.getElementById('readerCounter');
 
-  trackEl.innerHTML = '';
-  posts.forEach(p => {
+  function showCard(idx) {
+    const p    = posts[idx];
     const name = userMap[p.uid] || '멤버';
     const isMy = p.uid === myId;
+    trackEl.innerHTML = '';
+    trackEl.scrollTop = 0;
     const card = document.createElement('div');
     card.className = 'reader-card';
     card.appendChild(el('div', { className: 'keyword-tag', style: { marginBottom: '16px' }, textContent: `# ${p.keyword || '글감'}` }));
@@ -1397,25 +1390,25 @@ function openReader(posts, startIdx) {
     if (p.title) card.appendChild(el('h2', { style: { margin: '0 0 20px', fontSize: '22px', fontWeight: '900', lineHeight: '1.4' }, textContent: p.title }));
     card.appendChild(el('p', { style: { whiteSpace: 'pre-wrap', lineHeight: '1.8', fontSize: '16px', color: '#111', margin: '0' }, textContent: p.text }));
     trackEl.appendChild(card);
-  });
+    counter.textContent = posts.length > 1 ? `${idx + 1} / ${posts.length}` : '';
+  }
 
+  showCard(startIdx);
   overlay.classList.remove('hidden');
 
-  requestAnimationFrame(() => {
-    trackEl.scrollLeft = startIdx * trackEl.clientWidth;
-    counter.textContent = posts.length > 1 ? `${startIdx + 1} / ${posts.length}` : '';
-  });
-
-  trackEl.onscroll = () => {
-    const idx = Math.round(trackEl.scrollLeft / trackEl.clientWidth);
-    if (idx !== currentIdx) {
-      currentIdx = idx;
-      counter.textContent = posts.length > 1 ? `${currentIdx + 1} / ${posts.length}` : '';
-    }
+  let tx = 0, ty = 0;
+  overlay.ontouchstart = e => { tx = e.touches[0].clientX; ty = e.touches[0].clientY; };
+  overlay.ontouchend   = e => {
+    const dx = e.changedTouches[0].clientX - tx;
+    const dy = Math.abs(e.changedTouches[0].clientY - ty);
+    if (Math.abs(dx) < 60 || dy > Math.abs(dx)) return;
+    if (dx < 0 && currentIdx < posts.length - 1) showCard(++currentIdx);
+    else if (dx > 0 && currentIdx > 0) showCard(--currentIdx);
   };
 
   document.getElementById('readerCloseBtn').onclick = () => {
-    trackEl.onscroll = null;
+    overlay.ontouchstart = null;
+    overlay.ontouchend   = null;
     overlay.classList.add('hidden');
   };
 }
