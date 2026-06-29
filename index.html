@@ -294,7 +294,13 @@
   }
   .reader-counter { font-size: 13px; font-weight: 700; color: #999; }
   .reader-track { flex: 1; overflow-y: auto; }
-  .reader-card { padding: 28px 24px 60px; }
+  .reader-card { padding: 28px 24px 40px; }
+  .reader-dots {
+    display: flex; justify-content: center; gap: 6px; flex-shrink: 0;
+    padding: 10px 0 calc(12px + env(safe-area-inset-bottom));
+  }
+  .reader-dot { width: 6px; height: 6px; border-radius: 50%; background: #DDD; transition: background 0.2s; }
+  .reader-dot.on { background: #111; }
 </style>
 </head>
 <body>
@@ -491,6 +497,7 @@
     <div style="width:36px;"></div>
   </div>
   <div id="readerTrack" class="reader-track"></div>
+  <div id="readerDots" class="reader-dots"></div>
 </div>
 
 <script type="module">
@@ -1388,6 +1395,17 @@ function openReader(posts, startIdx) {
     card.appendChild(el('p', { style: { whiteSpace: 'pre-wrap', lineHeight: '1.8', fontSize: '16px', color: '#111', margin: '0' }, textContent: p.text }));
     trackEl.appendChild(card);
     counter.textContent = posts.length > 1 ? `${idx + 1} / ${posts.length}` : '';
+    document.querySelectorAll('.reader-dot').forEach((d, i) => d.classList.toggle('on', i === idx));
+  }
+
+  const dotsEl = document.getElementById('readerDots');
+  dotsEl.innerHTML = '';
+  if (posts.length > 1) {
+    posts.forEach((_, i) => {
+      const dot = document.createElement('div');
+      dot.className = 'reader-dot' + (i === startIdx ? ' on' : '');
+      dotsEl.appendChild(dot);
+    });
   }
 
   showCard(startIdx);
