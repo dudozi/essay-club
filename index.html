@@ -282,6 +282,10 @@
   .kw-btn { border: 1.5px solid #111; background: #FFF; border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 700; cursor: pointer; }
   .kw-btn.del { border-color: var(--accent); color: var(--accent); }
   #tab-today { height: 100%; }
+  @keyframes emojiFloat {
+    0%   { opacity: 1; transform: translateY(0) translateX(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-70vh) translateX(var(--dx)) scale(0.6); }
+  }
 
   /* 풀스크린 리더 */
   .reader-overlay {
@@ -1593,6 +1597,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
   const btn = document.getElementById('submitBtn');
   btn.disabled = true; btn.textContent = '제출 중...';
   try {
+    showCelebration();
     await addDoc(collection(db, 'posts'), {
       uid:       myId,
       batchId:   currentBatch,
@@ -1613,6 +1618,31 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
     btn.disabled = false; btn.textContent = '제출하기';
   }
 });
+
+// ── 제출 축하 애니메이션 ──────────────────────────────────────────────────────
+function showCelebration() {
+  const emojis = ['😎', '😚', '💫', '👍', '👏', '🎉', '✨'];
+  const picked = emojis[Math.floor(Math.random() * emojis.length)];
+  for (let i = 0; i < 22; i++) {
+    const span = document.createElement('span');
+    span.textContent = picked;
+    const dx = (Math.random() - 0.5) * 120;
+    const delay = Math.random() * 500;
+    const duration = 1100 + Math.random() * 700;
+    span.style.cssText = `
+      position: fixed;
+      left: ${10 + Math.random() * 80}vw;
+      bottom: ${15 + Math.random() * 15}vh;
+      font-size: ${22 + Math.random() * 22}px;
+      z-index: 99999;
+      pointer-events: none;
+      --dx: ${dx}px;
+      animation: emojiFloat ${duration}ms ease-out ${delay}ms forwards;
+    `;
+    document.body.appendChild(span);
+    setTimeout(() => span.remove(), delay + duration + 100);
+  }
+}
 
 // ── 글감 관리 (어드민) ───────────────────────────────────────────────────────
 function renderKeywordList() {
