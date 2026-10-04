@@ -1339,7 +1339,7 @@ function renderCarouselFeed(container, sortedPosts) {
   }
 
   if (filtered.length === 0) {
-    container.appendChild(emptyState('조건에 맞는 에세이가 없습니다.'));
+    container.appendChild(emptyState(sortedPosts.length === 0 ? '아직 작성된 에세이가 없어요' : '조건에 맞는 에세이가 없어요'));
     return;
   }
 
