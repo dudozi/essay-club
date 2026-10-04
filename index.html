@@ -560,6 +560,7 @@ let myBatchId      = null;
 let myBatches      = [];
 let currentBatch   = null;
 let allPosts       = [];
+let postsReady     = false;
 let allKeywords    = [];
 let userMap        = {};
 let todaySubmitted = false;
@@ -872,6 +873,8 @@ document.getElementById('backToRetNick').addEventListener('click', () => {
 
 // ── 앱 시작 ──────────────────────────────────────────────────────────────────
 function startApp() {
+  const startBatch = currentBatch;
+  postsReady = false;
   document.getElementById('myCircle').textContent = myName[0];
   document.getElementById('mainTitle').onclick = () => { if (myBatches.length > 1) openBatchPanel(); };
   document.getElementById('myCircle').onclick = () => { if (myBatches.length > 1) openBatchPanel(); };
@@ -919,11 +922,13 @@ function startApp() {
     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   })();
   getDocs(query(collection(db, 'keywords'), where('batchId', '==', currentBatch), where('datetime', '<=', nowISO), orderBy('datetime', 'desc'), limit(1))).then(snap => {
+    if (startBatch !== currentBatch) return;
     if (!snap.empty) {
       currentKeywordDatetime = snap.docs[0].data().datetime || null;
     }
     if (postsUnsub) postsUnsub();
     postsUnsub = onSnapshot(query(collection(db, 'posts'), where('batchId', '==', currentBatch)), snap => {
+      postsReady = true;
       allPosts = [];
       const doneIds = new Set();
       snap.forEach(s => {
@@ -1040,6 +1045,14 @@ window.openBatchPanel = () => {
       if (keywordsUnsub) keywordsUnsub();
       if (globalKeywordsUnsub) globalKeywordsUnsub();
       if (kwRefreshTimer) clearTimeout(kwRefreshTimer);
+      allPosts = [];
+      allKeywords = [];
+      currentKeywordDatetime = null;
+      activeFilter = 'all';
+      selectedKeyword = null;
+      selectedMemberId = null;
+      updateFilterButtons();
+      document.getElementById('feedList').innerHTML = '';
       startApp();
     });
     listEl.appendChild(btn);
@@ -1057,6 +1070,7 @@ let kwRefreshTimer = null;
 function resubscribePosts() {
   if (postsUnsub) postsUnsub();
   postsUnsub = onSnapshot(query(collection(db, 'posts'), where('batchId', '==', currentBatch)), snap => {
+    postsReady = true;
     allPosts = [];
     const doneIds = new Set();
     snap.forEach(s => {
@@ -1319,6 +1333,7 @@ window.renderFeed = () => {
   const feedEl = document.getElementById('feedList');
   if (!feedEl) return;
   feedEl.innerHTML = '';
+  if (!postsReady) return;
 
   const sorted = [...allPosts].sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
 
