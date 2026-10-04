@@ -360,8 +360,8 @@
 <button id="submitBtn" class="btn-next" style="opacity:0.3;" disabled>제출하기</button>
         </div>
         <div id="alreadySubmitted" class="already-submitted-banner hidden">
-          ✅ 오늘의 글을 이미 제출했어요!<br>
-          <span style="font-weight:400; font-size:14px; margin-top:8px; display:block;">피드에서 확인해보세요.</span>
+          <span id="alreadySubmittedTitle">✅ 오늘의 글을 이미 제출했어요!</span><br>
+          <span id="alreadySubmittedSub" style="font-weight:400; font-size:14px; margin-top:8px; display:block;">피드에서 확인해보세요.</span>
         </div>
       </div>
     </div>
@@ -574,7 +574,7 @@ let pendingNewNick  = null;
 let pendingRealName = null;
 let pendingBatchId  = null;
 
-const BATCH_CODES = { 'MOLE0': '0', 'MOLE01': '1' };
+const BATCH_CODES = { 'MOLE0': '0', 'MOLE01': '1', 'ESSAY02': '2' };
 const BATCH_LABELS = { 'pilot': '파일럿 1차', '0': '파일럿 2차', '1': '1기' };
 
 const pad = n => String(n).padStart(2, '0');
@@ -704,6 +704,7 @@ document.getElementById('newNickBtn').addEventListener('click', async () => {
   errEl.textContent = '';
 
   if (!nickname || nickname.length < 2 || nickname.length > 4) { errEl.textContent = '닉네임은 2~4자여야 합니다.'; return; }
+  if (!/^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z0-9 ]+$/.test(nickname)) { errEl.textContent = '닉네임은 한글, 영어, 숫자만 사용할 수 있습니다.'; return; }
 
   const btn = document.getElementById('newNickBtn');
   btn.disabled = true; btn.textContent = '확인 중...';
@@ -994,11 +995,10 @@ function subscribeKeywords() {
 
       if (todaySubmitted) {
         document.getElementById('dispKeyword').textContent = '없음';
-        document.getElementById('writeTabKeyword').textContent = '없음';
       } else {
         document.getElementById('dispKeyword').textContent = kwData.text;
-        document.getElementById('writeTabKeyword').textContent = kwData.text;
       }
+      document.getElementById('writeTabKeyword').textContent = kwData.text;
     });
     return;
   }
@@ -1027,7 +1027,7 @@ window.openBatchPanel = () => {
   myBatches.forEach(bId => {
     const btn = el('button', {
       className: 'batch-btn' + (bId === currentBatch ? ' active' : ''),
-      textContent: BATCH_LABELS[bId] || `기수 ${bId}`
+      textContent: BATCH_LABELS[bId] || `${bId}기`
     });
     btn.addEventListener('click', () => {
       if (bId === currentBatch) { closeBatchPanel(); return; }
@@ -1109,6 +1109,13 @@ document.addEventListener('visibilitychange', () => {
 
 // ── 오늘 탭 ──────────────────────────────────────────────────────────────────
 function renderStatusAndWelcome(doneIds = new Set()) {
+  const isWeekendRest = shouldHideKeyword();
+  document.getElementById('alreadySubmittedTitle').textContent = isWeekendRest ? '다음 글감을 기다려봐요!' : '✅ 오늘의 글을 이미 제출했어요!';
+  document.getElementById('alreadySubmittedSub').classList.toggle('hidden', isWeekendRest);
+  if (isWeekendRest) {
+    document.getElementById('writeForm').classList.add('hidden');
+    document.getElementById('alreadySubmitted').classList.remove('hidden');
+  }
   const welcomeEl = document.getElementById('dynamicWelcome');
   if (!welcomeEl) return;
   welcomeEl.innerHTML = '';
