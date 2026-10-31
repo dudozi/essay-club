@@ -666,12 +666,23 @@ body{position:fixed;inset:0;height:100%;overflow:hidden;overscroll-behavior:none
 .tab-btn{flex:1;min-height:48px;height:48px}
 body.is-writing .app{inset:auto;top:var(--writing-top,0px);left:50%;bottom:auto;right:auto;height:var(--writing-height,100dvh)}
 body.is-writing #mainUI{padding-bottom:0}
+
+.connection-status{position:fixed;left:50%;top:max(8px,env(safe-area-inset-top));transform:translateX(-50%);width:calc(100% - 24px);max-width:406px;z-index:10060;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#edf7ff;color:#182226;border:1px solid #cde8ff;border-radius:10px;padding:10px 12px;font-size:12px;box-shadow:0 2px 10px #0001}
+.connection-status button{border:0;border-radius:7px;background:white;color:#238fe7;padding:7px 9px;font-size:12px;white-space:nowrap}
+
+/* Keep the reader shell stationary while its article scrolls vertically. */
+.reader-overlay{overflow:hidden;overscroll-behavior:none;touch-action:pan-y pinch-zoom;min-width:0}
+.reader-header,.reader-navigation{width:100%;min-width:0;flex-shrink:0;overscroll-behavior:none}
+.reader-track{width:100%;min-width:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:none;touch-action:pan-y pinch-zoom;-webkit-overflow-scrolling:touch}
+.reader-card{width:100%;min-width:0;overflow-wrap:anywhere}
+.carousel-track{overscroll-behavior-x:contain}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
+<div id="connectionStatus" class="connection-status hidden" role="status" aria-live="polite"><span id="connectionMessage"></span><button id="retryAppData" type="button">다시 불러오기</button></div>
 <div class="app">
 
   <div id="mainUI" class="hidden" style="flex-direction:column; height:100%;">
@@ -961,13 +972,79 @@ window.toggleModal = (id, show) => {
   document.getElementById(id).classList.toggle('hidden', !show);
 };
 
+
+// Every data subscription has bounded recovery and an observable connection state.
+const dataConnections=new Map();
+function renderConnectionStatus(){
+ const root=document.getElementById('connectionStatus');
+ const states=[...dataConnections.entries()].filter(([key])=>key!=='batches').map(([,state])=>state);
+ const failed=states.filter(s=>s.error),waiting=states.some(s=>s.pending);
+ root.classList.toggle('hidden',!failed.length&&!waiting);
+ document.getElementById('connectionMessage').textContent=failed.length
+  ? (failed.some(s=>s.error==='permission-denied')?'데이터 접근 권한을 확인하지 못했어요.':'연결이 지연되고 있어요. 다시 불러올 수 있어요.')
+  : '데이터를 불러오는 중이에요…';
+ document.getElementById('retryAppData').classList.toggle('hidden',!failed.length);
+}
+function listenWithRecovery(key,ref,onData,onError=()=>{}){
+ dataConnections.get(key)?.stop?.();
+ const state={pending:true,error:null,attempt:0,closed:false,serial:0,unsubscribe:null,timer:null,watchdog:null};
+ dataConnections.set(key,state);
+ const current=()=>!state.closed&&dataConnections.get(key)===state;
+ state.stop=()=>{state.closed=true;++state.serial;clearTimeout(state.timer);clearTimeout(state.watchdog);state.unsubscribe?.();if(dataConnections.get(key)===state)dataConnections.delete(key);};
+ const fail=(error,serial)=>{
+  if(!current()||serial!==state.serial)return;
+  clearTimeout(state.watchdog);state.unsubscribe?.();state.unsubscribe=null;++state.serial;
+  state.pending=false;state.error=error?.code||'unavailable';
+  console.warn('Data connection:',key,state.error);onError(error);renderConnectionStatus();
+  const permanent=['permission-denied','unauthenticated','failed-precondition','invalid-argument'].includes(state.error);
+  if(!permanent&&state.attempt<3){const delay=1000*2**state.attempt++;state.timer=setTimeout(state.restart,delay);}
+ };
+ state.restart=()=>{
+  if(!current())return;
+  clearTimeout(state.timer);clearTimeout(state.watchdog);state.unsubscribe?.();
+  const serial=++state.serial;state.pending=true;state.error=null;renderConnectionStatus();
+  state.watchdog=setTimeout(()=>fail({code:'deadline-exceeded'},serial),12000);
+  try{state.unsubscribe=onSnapshot(ref,{includeMetadataChanges:true},snapshot=>{
+   if(!current()||serial!==state.serial)return;
+   // An empty local cache is not evidence that server-side records were deleted.
+   if(snapshot.metadata?.fromCache&&snapshot.empty)return;
+   try{onData(snapshot);}catch(error){fail({code:'render-error'},serial);console.error('Data render failed:',key,error);return;}
+   if(!snapshot.metadata?.fromCache){clearTimeout(state.watchdog);state.pending=false;state.error=null;state.attempt=0;renderConnectionStatus();}
+  },error=>fail(error,serial));}catch(error){fail(error,serial);}
+ };
+ state.restart();return state.stop;
+}
+let lastRecoveryAt=0;
+function reconnectAppData(){
+ if(!myId){window.onload();return;}
+ if(Date.now()-lastRecoveryAt<3000)return;
+ lastRecoveryAt=Date.now();
+ for(const state of dataConnections.values()){state.attempt=0;state.restart?.();}
+ subscribeKeywords();scheduleNextKeywordRefresh();
+}
+document.getElementById('retryAppData').onclick=reconnectAppData;
+async function readSessionProfile(id){
+ const key='session',state={pending:true,error:null};dataConnections.set(key,state);renderConnectionStatus();
+ try{for(let attempt=0;attempt<3;attempt++){
+  let timeout;
+  try{const snap=await Promise.race([getDoc(doc(db,'profiles',id)),new Promise((_,reject)=>{timeout=setTimeout(()=>reject({code:'deadline-exceeded'}),12000);})]);
+   if(!snap.exists()&&snap.metadata?.fromCache)throw {code:'unavailable'};
+   dataConnections.delete(key);renderConnectionStatus();return snap;
+  }catch(error){state.error=error?.code||'unavailable';renderConnectionStatus();if(attempt===2||['permission-denied','unauthenticated'].includes(state.error))throw error;await new Promise(r=>setTimeout(r,1000*2**attempt));}
+  finally{clearTimeout(timeout);}
+ }}finally{state.pending=false;renderConnectionStatus();}
+}
+
 // ── 세션 복원 ────────────────────────────────────────────────────────────────
+let sessionRestorePending=false;
 window.onload = async () => {
+  if(sessionRestorePending)return;
+  sessionRestorePending=true;
   document.getElementById('authModal').classList.remove('hidden');
   const saved = localStorage.getItem('essay_session');
   try {
   if (saved) {
-    const snap = await getDoc(doc(db, 'profiles', saved));
+    const snap = await readSessionProfile(saved);
     if (snap.exists()) {
       const d0 = snap.data();
       myId         = saved;
@@ -983,6 +1060,7 @@ window.onload = async () => {
     localStorage.removeItem('essay_session');
   }
   } catch { document.getElementById('authModal').classList.remove('hidden'); }
+  finally{sessionRestorePending=false;}
 };
 
 function showMain() {
@@ -1189,7 +1267,6 @@ document.getElementById('backToRetNick').addEventListener('click', () => {
 // ── 앱 시작 ──────────────────────────────────────────────────────────────────
 function startApp() {
   const generation = ++appGeneration;
-  postsReady = false;
   postsError = false;
   renderFeed();
   document.getElementById('myCircle').textContent = myName[0];
@@ -1199,7 +1276,7 @@ function startApp() {
   renderBurrow();
 
   if (profilesUnsub) profilesUnsub();
-  profilesUnsub = onSnapshot(collection(db, 'profiles'), snap => {
+  profilesUnsub = listenWithRecovery('profiles',collection(db, 'profiles'), snap => {
     if(generation!==appGeneration)return;
     userMap = {};
     allProfileData = {};
@@ -1223,10 +1300,12 @@ function startApp() {
   subscribeKeywords();
 
   if (globalKeywordsUnsub) globalKeywordsUnsub();
-  globalKeywordsUnsub = onSnapshot(query(collection(db, 'keywords'), where('batchId', '==', currentBatch), orderBy('datetime', 'desc')), snap => {
+  globalKeywordsUnsub = listenWithRecovery('keywords',query(collection(db, 'keywords'), where('batchId', '==', currentBatch)), snap => {
     if(generation!==appGeneration)return;
     allKeywords = [];
     snap.forEach(d => allKeywords.push({ id: d.id, ...d.data() }));
+    allKeywords.sort((a,b)=>(b.datetime||'').localeCompare(a.datetime||''));
+    subscribeKeywords();
     scheduleNextKeywordRefresh();
     renderStatusAndWelcome();
     if (!document.getElementById('adminModal').classList.contains('hidden')) renderKeywordList();
@@ -1248,62 +1327,12 @@ function shouldHideKeyword() {
 }
 
 function subscribeKeywords() {
-  const generation=++keywordGeneration,app=appGeneration,batch=currentBatch;
-  const isCurrent=()=>generation===keywordGeneration&&app===appGeneration&&batch===currentBatch;
-  if (keywordsUnsub) keywordsUnsub();
-
-  if (shouldHideKeyword()) {
-    document.getElementById('dispKeyword').textContent = '글감 준비 중';
-    document.getElementById('writeTabKeyword').textContent = '없음';
-    return;
-  }
-
-  const now = new Date();
-  const day  = now.getDay();
-  const hour = now.getHours();
-  const isFriMidnightToSat7 = (day === 6 && hour < 7);
-
-  const nowISO = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
-
-  if (isFriMidnightToSat7) {
-    const q = query(collection(db, 'keywords'), where('batchId', '==', currentBatch), where('datetime', '<=', nowISO), orderBy('datetime', 'desc'), limit(1));
-    keywordsUnsub = onSnapshot(q, snap => {
-      if(!isCurrent())return;
-      if (snap.empty) {
-        document.getElementById('dispKeyword').textContent = '없음';
-        document.getElementById('writeTabKeyword').textContent = '글감 없음';
-        return;
-      }
-      const kwData = snap.docs[0].data();
-      currentKeywordDatetime = kwData.datetime || null;
-
-      if (todaySubmitted) {
-        document.getElementById('dispKeyword').textContent = '없음';
-      } else {
-        document.getElementById('dispKeyword').textContent = kwData.text;
-      }
-      document.getElementById('writeTabKeyword').textContent = kwData.text;
-    });
-    return;
-  }
-
-  keywordsUnsub = onSnapshot(
-    query(collection(db, 'keywords'), where('batchId', '==', currentBatch), where('datetime', '<=', nowISO), orderBy('datetime', 'desc'), limit(1)),
-    snap => {
-      if(!isCurrent())return;
-      if (snap.empty) {
-        document.getElementById('dispKeyword').textContent = '글감이 없습니다';
-        document.getElementById('writeTabKeyword').textContent = '글감 없음';
-        return;
-      }
-      snap.forEach(d => {
-        const t = d.data().text;
-        currentKeywordDatetime = d.data().datetime || null;
-        document.getElementById('dispKeyword').textContent = t;
-        document.getElementById('writeTabKeyword').textContent = t;
-      });
-    }
-  );
+ if(writeTestActive)return;
+ const active=shouldHideKeyword()?null:allKeywords.filter(k=>k.datetime&&new Date(k.datetime)<=new Date()).sort((a,b)=>a.datetime.localeCompare(b.datetime)).at(-1);
+ currentKeywordDatetime=active?.datetime||null;
+ document.getElementById('dispKeyword').textContent=active?.text||'글감 준비 중';
+ document.getElementById('writeTabKeyword').textContent=active?.text||'글감 없음';
+ renderStatusAndWelcome();
 }
 
 async function requestBatchSwitch(bId){
@@ -1336,6 +1365,7 @@ function switchBatch(bId) {
       if (globalKeywordsUnsub) globalKeywordsUnsub();
       if (kwRefreshTimer) clearTimeout(kwRefreshTimer);
       allPosts = [];
+      postsReady=false;
       allKeywords = [];
       currentKeywordDatetime = null;
       activeFilter = 'all';
@@ -1373,7 +1403,7 @@ function resubscribePosts() {
   const isCurrent=()=>generation===postsGeneration&&app===appGeneration&&batch===currentBatch;
   if (postsUnsub) postsUnsub();
   postsError=false;
-  postsUnsub=onSnapshot(query(collection(db,'posts'),where('batchId','==',batch)),snap=>{
+  postsUnsub=listenWithRecovery('posts',query(collection(db,'posts'),where('batchId','==',batch)),snap=>{
     if(!isCurrent())return;
     postsReady=true;postsError=false;
     allPosts=[];
@@ -1382,50 +1412,32 @@ function resubscribePosts() {
     renderFeed();
   },()=>{
     if(!isCurrent())return;
-    postsReady=false;postsError=true;
+    postsError=true;
     renderFeed();
   });
 }
 
-async function scheduleNextKeywordRefresh() {
-  if (kwRefreshTimer) clearTimeout(kwRefreshTimer);
-  const scheduledBatch=currentBatch,scheduledApp=appGeneration;
-  const now = new Date();
-  const nowISO = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
-
-  try {
-    const snap = await getDocs(query(collection(db, 'keywords'), where('batchId', '==', currentBatch), where('datetime', '>', nowISO), orderBy('datetime', 'asc'), limit(1)));
-    if(scheduledBatch!==currentBatch||scheduledApp!==appGeneration)return;
-    if (!snap.empty) {
-      const nextDatetime = snap.docs[0].data().datetime;
-      const nextDate     = new Date(nextDatetime);
-      const msUntilNext  = nextDate - new Date() + 1000;
-
-      kwRefreshTimer = setTimeout(async () => {
-        if(scheduledBatch!==currentBatch||scheduledApp!==appGeneration)return;
-        currentKeywordDatetime = nextDatetime;
-        subscribeKeywords();
-        resubscribePosts();
-        scheduleNextKeywordRefresh();
-      }, msUntilNext);
-    }
-  } catch(e) {
-    console.warn('다음 글감 타이머 설정 실패:', e);
-  }
+function scheduleNextKeywordRefresh() {
+ clearTimeout(kwRefreshTimer);
+ const app=appGeneration,batch=currentBatch,now=Date.now();
+ const next=allKeywords.map(k=>new Date(k.datetime).getTime()).filter(t=>Number.isFinite(t)&&t>now).sort((a,b)=>a-b)[0];
+ if(!next)return;
+ kwRefreshTimer=setTimeout(()=>{if(app!==appGeneration||batch!==currentBatch)return;subscribeKeywords();scheduleNextKeywordRefresh();},Math.min(next-now+100,2147483647));
 }
 
 let lastClockState='';
 setInterval(()=>{if(!myId)return;const d=new Date();const state=getTodayISO()+'|'+shouldHideKeyword()+'|'+d.getHours();if(state!==lastClockState){lastClockState=state;renderStatusAndWelcome();subscribeKeywords();}},30000);
 
-// ── 백그라운드 복귀 시 글감 갱신 ────────────────────────────────────────────
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
-    if(!myId)return;
-    renderStatusAndWelcome();
-    subscribeKeywords();
-    scheduleNextKeywordRefresh();
-  }
+// Resume all subscriptions after background suspension; do not discard editor fields.
+let hiddenAt=0;
+document.addEventListener('visibilitychange',()=>{
+ if(document.visibilityState==='hidden'){hiddenAt=Date.now();return;}
+ if(!myId)return;
+ subscribeKeywords();scheduleNextKeywordRefresh();
+ if(Date.now()-hiddenAt>15000||[...dataConnections.values()].some(s=>s.error||s.pending))reconnectAppData();
 });
+window.addEventListener('online',()=>{if(myId)reconnectAppData();});
+window.addEventListener('pageshow',event=>{if(event.persisted&&myId)reconnectAppData();});
 
 // ── 오늘 탭 ──────────────────────────────────────────────────────────────────
 function keywordStats() {
@@ -1470,7 +1482,7 @@ function renderStatusAndWelcome() {
  const config=resolvedBatch(currentBatch);
  document.getElementById('clubDates').textContent=config?.startDate ? config.startDate.replaceAll('-','.')+' ~ '+(config.endDate?.replaceAll('-','.')||'종료일 미정') : '';
  const todayPosts=active ? allPosts.filter(p=>p.createdAt?.toDate && match(p,active)).sort((a,b)=>a.createdAt.toDate()-b.createdAt.toDate()) : [];
- const early=todayPosts[0];document.getElementById('earlyMole').replaceChildren(...(early ? [el('span',{className:'blue',textContent:userMap[early.uid]||early.uid}),el('span',{textContent:early.createdAt.toDate().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})+' 제출'})] : [el('span',{textContent:'다음 주 1등은 누구?'})]));
+ const early=todayPosts[0];document.getElementById('earlyMole').replaceChildren(...(early ? [el('span',{className:'blue',textContent:userMap[early.uid]||early.uid}),el('span',{textContent:early.createdAt.toDate().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})+' 제출'})] : [el('span',{textContent:[0,6].includes(new Date().getDay())?'다음주 1등은 누구?':'오늘 1등은 누구?'})]));
  const ranks=Object.entries(userMap).map(([id,name])=>({name,count:allPosts.filter(p=>p.uid===id && p.batchId===currentBatch).length})).sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name,'ko'));
  const mostSubmitted=ranks[0]?.count||0;
  const leaders=ranks.filter(member=>mostSubmitted>0 && member.count===mostSubmitted);
@@ -1655,7 +1667,7 @@ window.renderFeed = () => {
   const selection=document.getElementById('feedSelection');
   selection.textContent=activeFilter==='keyword'&&selectedKeyword ? '글감 · '+selectedKeyword : activeFilter==='member'&&selectedMemberId ? '멤버 · '+(userMap[selectedMemberId]||'멤버') : '';
   selection.classList.toggle('hidden',!selection.textContent);
-  if(postsError){const box=emptyState('글을 불러오지 못했어요. 연결 상태를 확인해 주세요.');const retry=el('button',{className:'text-button blue',textContent:'다시 불러오기'});retry.onclick=()=>{resubscribePosts();renderFeed();};box.appendChild(retry);feedEl.appendChild(box);return;}
+  if(postsError&&!postsReady){const box=emptyState('글을 불러오지 못했어요. 연결 상태를 확인해 주세요.');const retry=el('button',{className:'text-button blue',textContent:'다시 불러오기'});retry.onclick=()=>{resubscribePosts();renderFeed();};box.appendChild(retry);feedEl.appendChild(box);return;}
   if (!postsReady) { feedEl.appendChild(emptyState('글을 불러오는 중이에요'));return; }
 
   const sorted = [...allPosts].sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
@@ -1769,7 +1781,9 @@ function buildCarouselCard(p, swipePosts, swipeIdx) {
 }
 
 // ── 풀스크린 리더 ─────────────────────────────────────────────────────────────
+let closeReaderGesture=null;
 function openReader(posts, startIdx) {
+  closeReaderGesture?.();
   let currentIdx = startIdx;
   const overlay  = document.getElementById('readerOverlay');
   const trackEl  = document.getElementById('readerTrack');
@@ -1810,23 +1824,43 @@ function openReader(posts, startIdx) {
   showCard(startIdx);
   overlay.classList.remove('hidden');
 
-  let tx = 0, ty = 0;
-  function onTS(e) { tx = e.touches[0].clientX; ty = e.touches[0].clientY; }
-  function onTE(e) {
-    const dx = e.changedTouches[0].clientX - tx;
-    const dy = Math.abs(e.changedTouches[0].clientY - ty);
-    if (Math.abs(dx) < 50 || dy > Math.abs(dx)) return;
-    if (dx < 0 && currentIdx < posts.length - 1) showCard(++currentIdx);
-    else if (dx > 0 && currentIdx > 0) showCard(--currentIdx);
+  let gesture=null;
+  function onTS(e){
+    if(e.touches.length!==1){gesture=null;return;}
+    const touch=e.touches[0];
+    gesture={id:touch.identifier,x:touch.clientX,y:touch.clientY,axis:null,readable:trackEl.contains(e.target)&&!e.target.closest('button,a,input,textarea,select')};
   }
-  overlay.addEventListener('touchstart', onTS);
-  overlay.addEventListener('touchend', onTE);
-
-  document.getElementById('readerCloseBtn').onclick = () => {
-    overlay.removeEventListener('touchstart', onTS);
-    overlay.removeEventListener('touchend', onTE);
-    overlay.classList.add('hidden');
+  function onTM(e){
+    if(!gesture||e.touches.length!==1)return;
+    const touch=e.touches[0];if(touch.identifier!==gesture.id)return;
+    const dx=touch.clientX-gesture.x,dy=touch.clientY-gesture.y;
+    if(!gesture.axis&&Math.max(Math.abs(dx),Math.abs(dy))>=8)gesture.axis=Math.abs(dx)>Math.abs(dy)*1.2?'x':'y';
+    // A horizontal gesture must not pan the page underneath the reader.
+    const atEdge=dy>0&&trackEl.scrollTop<=0||dy<0&&trackEl.scrollTop+trackEl.clientHeight>=trackEl.scrollHeight-1;
+    if(gesture.axis==='x'||!gesture.readable||gesture.axis==='y'&&atEdge){if(e.cancelable)e.preventDefault();}
+  }
+  function onTE(e){
+    const finished=gesture;gesture=null;
+    if(!finished||!finished.readable||finished.axis==='y')return;
+    const touch=[...e.changedTouches].find(t=>t.identifier===finished.id);if(!touch)return;
+    const dx=touch.clientX-finished.x,dy=Math.abs(touch.clientY-finished.y);
+    if(Math.abs(dx)<50||dy>=Math.abs(dx))return;
+    showCard(currentIdx+(dx<0?1:-1));
+  }
+  function onTC(){gesture=null;}
+  overlay.addEventListener('touchstart',onTS,{passive:true});
+  overlay.addEventListener('touchmove',onTM,{passive:false});
+  overlay.addEventListener('touchend',onTE,{passive:true});
+  overlay.addEventListener('touchcancel',onTC,{passive:true});
+  closeReaderGesture=()=>{
+    gesture=null;
+    overlay.removeEventListener('touchstart',onTS);
+    overlay.removeEventListener('touchmove',onTM);
+    overlay.removeEventListener('touchend',onTE);
+    overlay.removeEventListener('touchcancel',onTC);
+    closeReaderGesture=null;
   };
+  document.getElementById('readerCloseBtn').onclick=()=>{closeReaderGesture?.();overlay.classList.add('hidden');};
 }
 
 function emptyState(text) {
@@ -2195,7 +2229,7 @@ setInterval(()=>{if(!myId)return;const {active,rest}=keywordStats();if(!active||
 function subscribeBatchMetadata(){
  loadLegacyPeriods();
  if(batchesUnsub)batchesUnsub();
- batchesUnsub=onSnapshot(collection(db,'batches'),snap=>{batchReadError=false;batchMetadata={};snap.forEach(d=>{batchMetadata[d.id]=d.data();BATCH_LABELS[d.id]=d.data().name||d.id;});renderBurrow();renderStatusAndWelcome();if(!document.getElementById('batchManagerModal').classList.contains('hidden'))renderBatchManager();},()=>{batchReadError=true;document.getElementById('batchManagerError').textContent='기수 정보를 불러오지 못했어요. 데이터 접근 권한을 확인해 주세요.';});
+ batchesUnsub=listenWithRecovery('batches',collection(db,'batches'),snap=>{batchReadError=false;batchMetadata={};snap.forEach(d=>{batchMetadata[d.id]=d.data();BATCH_LABELS[d.id]=d.data().name||d.id;});renderBurrow();renderStatusAndWelcome();if(!document.getElementById('batchManagerModal').classList.contains('hidden'))renderBatchManager();},()=>{batchReadError=true;document.getElementById('batchManagerError').textContent='기수 정보를 불러오지 못했어요. 데이터 접근 권한을 확인해 주세요.';});
 }
 const legacyBatchIds=['pilot','0','1','2'];
 let legacyPeriods={};
@@ -2267,14 +2301,27 @@ document.getElementById('closeWriteTest').onclick=()=>{
 // The navigation is a fixed control surface, never a drag-to-scroll target.
 document.querySelector('.tab-nav').addEventListener('touchmove',event=>event.preventDefault(),{passive:false});
 
-// Let the software keyboard share the viewport with the editor, not the submit/nav bars.
+// Hide the submit/navigation bars only while the software keyboard occupies the viewport.
+// Dismissing a mobile keyboard can leave the textarea focused.
 const writingFields=[document.getElementById('postTitle'),document.getElementById('postText')];
+const writingViewportHeights=new Map();
+let writingKeyboardOpen=false;
 function syncWritingViewport(){
- const editing=writingFields.includes(document.activeElement)&&!document.getElementById('tab-write').classList.contains('hidden');
- document.body.classList.toggle('is-writing',editing);
- if(editing){
-  const viewport=window.visualViewport;
-  document.documentElement.style.setProperty('--writing-height',(viewport?.height||window.innerHeight)+'px');
+ const viewport=window.visualViewport;
+ const height=viewport?.height||window.innerHeight;
+ const width=Math.round(window.innerWidth);
+ const focused=writingFields.includes(document.activeElement)&&!document.getElementById('tab-write').classList.contains('hidden');
+ // Keep the full height measured before focus, including when Android resizes the layout viewport.
+ const previous=writingViewportHeights.get(width);
+ const baseline=Math.max(previous||0,window.innerHeight,height);
+ if(!focused||height>=baseline-40) writingViewportHeights.set(width,baseline);
+ else if(!previous) writingViewportHeights.set(width,baseline);
+ const unzoomed=!viewport||Math.abs(viewport.scale-1)<0.05;
+ const obscured=baseline-height;
+ writingKeyboardOpen=focused&&unzoomed&&obscured>(writingKeyboardOpen?80:120);
+ document.body.classList.toggle('is-writing',writingKeyboardOpen);
+ if(writingKeyboardOpen){
+  document.documentElement.style.setProperty('--writing-height',height+'px');
   document.documentElement.style.setProperty('--writing-top',(viewport?.offsetTop||0)+'px');
  }else{
   document.documentElement.style.removeProperty('--writing-height');
@@ -2285,6 +2332,8 @@ writingFields.forEach(field=>{field.addEventListener('focus',syncWritingViewport
 window.visualViewport?.addEventListener('resize',syncWritingViewport);
 window.visualViewport?.addEventListener('scroll',syncWritingViewport);
 window.addEventListener('resize',syncWritingViewport);
+window.addEventListener('pageshow',syncWritingViewport);
+syncWritingViewport();
 
 </script>
 </body>
